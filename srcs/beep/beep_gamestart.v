@@ -1,6 +1,6 @@
 module beep_gamestart(
     input clk,
-    input [1:0] gememode, // 游戏状态变量
+    input [1:0] memode, // 游戏状态变量
     output reg beep
     );
 
@@ -36,8 +36,8 @@ module beep_gamestart(
 
     assign duty_data = freq_data >> 1'b1;
 
-always @(gememode) begin
-        if (gememode == 2'b00) begin // 游戏开始页面
+always @(gamemode) begin
+        if (gamemode == 2'b00) begin // 游戏开始页面
             rst = 1'b0; // rst 为 0 时，声波正常产生
         end 
         else begin
