@@ -1,12 +1,8 @@
 set_property PACKAGE_PIN W16 [get_ports BTNX4]
 set_property IOSTANDARD LVCMOS18 [get_ports BTNX4]
-set_property IOSTANDARD LVCMOS18 [get_ports {btn[0]}]
-set_property IOSTANDARD LVCMOS18 [get_ports {btn[1]}]
-set_property IOSTANDARD LVCMOS18 [get_ports {btn[2]}]
+
 set_property IOSTANDARD LVCMOS18 [get_ports {RST_n}]
-set_property PACKAGE_PIN W14 [get_ports {btn[0]}]
-set_property PACKAGE_PIN V14 [get_ports {btn[1]}]
-set_property PACKAGE_PIN V19 [get_ports {btn[2]}]
+
 set_property PACKAGE_PIN V18 [get_ports {RST_n}]
 set_property PACKAGE_PIN AC18 [get_ports clk]
 set_property IOSTANDARD LVCMOS18 [get_ports clk]
@@ -26,9 +22,17 @@ set_property -dict {PACKAGE_PIN T23 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports {B
 set_property -dict {PACKAGE_PIN M21 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports VS]
 set_property -dict {PACKAGE_PIN M22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports HS]
 
+set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[0]]
+set_property  PACKAGE_PIN AF24 [get_ports gamemode_led[0]]
+set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[1]]
+set_property  PACKAGE_PIN AE21 [get_ports gamemode_led[1]]
+
+
 #set_property PACKAGE_PIN AA10 [get_ports {RST_n}]
 #set_property IOSTANDARD LVCMOS15 [get_ports {RST_n}]
 
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[0]}]
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[1]}]
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[2]}]
+#PS2
+set_property PACKAGE_PIN N18 [get_ports {ps2_clk}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ps2_clk}]
+set_property PACKAGE_PIN M19 [get_ports {ps2_data}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ps2_data}]
