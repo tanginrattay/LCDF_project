@@ -25,3 +25,7 @@ set_property -dict {PACKAGE_PIN T22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports {B
 set_property -dict {PACKAGE_PIN T23 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports {B[3]}]
 set_property -dict {PACKAGE_PIN M21 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports VS]
 set_property -dict {PACKAGE_PIN M22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports HS]
+
+#set_property PACKAGE_PIN AA10 [get_ports {RST_n}]
+#set_property IOSTANDARD LVCMOS15 [get_ports {RST_n}]
+
