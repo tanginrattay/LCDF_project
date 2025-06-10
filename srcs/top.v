@@ -70,8 +70,6 @@ module top(
 
     // VGA屏幕图像生成模块
     vga_screen_pic u_vga_screen_pic(
-        .clk(clk_25mhz),
-        .rst_n(rst_n),
         .pix_x(pix_x),
         .pix_y(pix_y),
         .gamemode(gamemode),
