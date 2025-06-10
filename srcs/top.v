@@ -6,10 +6,11 @@ module top(
     output wire [3:0] G,     
     output wire [3:0] B,     
     output wire HS,          
-    output wire VS,          
-    output wire buzzer       
+    output wire VS          
+//    output wire buzzer       
 );
 
+    wire rst_n;
     reg [1:0] clk_div;
     wire clk_25mhz;
     always @(posedge clk or negedge rst_n) begin
@@ -29,6 +30,7 @@ module top(
     wire [199:0] obstacle_x;      
     wire [179:0] obstacle_y;      
 
+
     // VGA相关信号
     wire [9:0] pix_x;      // VGA 当前像素X坐标
     wire [8:0] pix_y;      // VGA 当前像素Y坐标
@@ -46,7 +48,6 @@ module top(
         .clk(clk_60hz),
         .obstacle_x(obstacle_x),
         .obstacle_y(obstacle_y),
-        .btn_ok(btn_ok),
         .gamemode(gamemode),
         .player_y(player_y)
     );
@@ -59,13 +60,13 @@ module top(
     );
 
 
-    buzzer_module u_buzzer (
-        .rst_n(rst_n),
-        .clk(clk),
-        .gamemode(gamemode),
-        .btn(btn_ok),
-        .buzzer(buzzer)
-    );
+//    buzzer_module u_buzzer (
+//        .rst_n(rst_n),
+//        .clk(clk),
+//        .gamemode(gamemode),
+//        .btn(btn_ok),
+//        .buzzer(buzzer)
+//    );
 
     // VGA屏幕图像生成模块
     vga_screen_pic u_vga_screen_pic(
