@@ -14,7 +14,7 @@ module game_logic(
     end
 
     always @(posedge btn[0]) begin 
-        gamemode <= 2'b01; // Start the game when btn[0] is pressed
+        gamemode <= gamemode + 1'b1; // Start the game when btn[0] is pressed
     end 
-
+  
 endmodule
