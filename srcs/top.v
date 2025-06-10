@@ -1,13 +1,13 @@
 module top(
     input wire clk,          
     input wire RST_n,        
-    input wire [2:0] btn,    
+    input wire [2:0] sw,
     output wire [3:0] R,     
     output wire [3:0] G,     
     output wire [3:0] B,     
     output wire HS,          
-    output wire VS          
-//    output wire buzzer       
+    output wire VS,          
+    output [1:0] gamemode_led
 );
 
     wire rst_n;
@@ -37,14 +37,11 @@ module top(
     wire [11:0] vga_data;  // VGA 像素颜色数据
     wire rdn;              // VGA 读使能信号
 
-    Anti_jitter mo(clk, btn[0], btn_ok[0]);
-    Anti_jitter m1(clk, btn[1], btn_ok[1]);
-    Anti_jitter m2(clk, btn[2], btn_ok[2]);
     Anti_jitter m3(clk, RST_n, rst_n);
 
     game_logic u_game_logic (
         .rst_n(rst_n),
-        .btn(btn_ok),
+        .sw(sw),
         .clk(clk_60hz),
         .obstacle_x(obstacle_x),
         .obstacle_y(obstacle_y),
@@ -59,14 +56,6 @@ module top(
         .obstacle_y(obstacle_y)
     );
 
-
-//    buzzer_module u_buzzer (
-//        .rst_n(rst_n),
-//        .clk(clk),
-//        .gamemode(gamemode),
-//        .btn(btn_ok),
-//        .buzzer(buzzer)
-//    );
 
     // VGA屏幕图像生成模块
     vga_screen_pic u_vga_screen_pic(
@@ -93,5 +82,7 @@ module top(
         .HS(HS),             // 行同步信号
         .VS(VS)              // 场同步信号
     );
+
+    assign gamemode_led = gamemode;
 
 endmodule

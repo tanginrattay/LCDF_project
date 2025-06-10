@@ -20,11 +20,17 @@ set_property -dict {PACKAGE_PIN T23 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports {B
 set_property -dict {PACKAGE_PIN M21 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports VS]
 set_property -dict {PACKAGE_PIN M22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports HS]
 
-#set_property PACKAGE_PIN AA10 [get_ports {RST_n}]
-#set_property IOSTANDARD LVCMOS15 [get_ports {RST_n}]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[0]}]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[1]}]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[2]}]
+set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[0]]
+set_property  PACKAGE_PIN AF24 [get_ports gamemode_led[0]]
+set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[1]]
+set_property  PACKAGE_PIN AE21 [get_ports gamemode_led[1]]
 
-#PS2
-NET "PS2_clk"	LOC = N18     	| IOSTANDARD = LVCMOS33 ; 
-NET "PS2_data"	LOC = M19     	| IOSTANDARD = LVCMOS33 ;
-
-
+set_property  IOSTANDARD LVCMOS15 [get_ports {sw[0]}]
+set_property  PACKAGE_PIN AA10 [get_ports {sw[0]}] 
+set_property  IOSTANDARD LVCMOS15 [get_ports {sw[1]}]
+set_property  IOSTANDARD LVCMOS15 [get_ports {sw[2]}]
+set_property  PACKAGE_PIN AB10 [get_ports {sw[1]}] 
+set_property  PACKAGE_PIN AA13 [get_ports {sw[2]}] 
