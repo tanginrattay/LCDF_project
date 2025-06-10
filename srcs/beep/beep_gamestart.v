@@ -36,7 +36,7 @@ module beep_gamestart(
 
     assign duty_data = freq_data >> 1'b1;
 
-always @(gamemode) begin
+always @(*) begin
         if (gamemode == 2'b00) begin // 游戏开始页面
             rst = 1'b0; // rst 为 0 时，声波正常产生
         end 

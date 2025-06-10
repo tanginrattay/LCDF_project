@@ -37,7 +37,7 @@ module beep_gameover(
     assign duty_data = freq_data >> 1'b1;
 
 
-always @(gamemode) begin
+always @(*) begin
         if (gamemode == 2'b11) begin // 游戏结束页面
             rst = 1'b0; // rst 为 0 时，声波正常产生
         end 
@@ -87,7 +87,7 @@ end
 
 always @(posedge clk or posedge rst) begin
         if (rst) begin
-            freq_data <= 18'd0;
+            freq_data <= 20'd0;
         end else begin
             case (cnt_125ms)
         6'd0: freq_data <= C4;
