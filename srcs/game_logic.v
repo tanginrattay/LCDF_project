@@ -43,11 +43,11 @@ module game_logic(
         (player_y_calc < UPER_BOUND) ? UPER_BOUND :
         (player_y_calc > LOWER_BOUND - PLAYER_SIZE) ? (LOWER_BOUND - PLAYER_SIZE) :
         player_y_calc
-    ) : ((LOWER_BOUND - UPER_BOUND) / 2);
+    ) : player_y;
 
     // 时序逻辑部分
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk) begin
+        if (gamemode == 2'b00) begin
             player_y           <= (LOWER_BOUND - UPER_BOUND) / 2;
             velocity           <= 0;
             crash              <= 2'b00;
