@@ -10,7 +10,7 @@
  *   obstacle_x  - 10个障碍物的X坐标范围，每个20位（左10+右10），共200位
  *   obstacle_y  - 10个障碍物的Y坐标范围，每个18位（上9+下9），共180位
  * 输出端口:
- *   rgb         - 当前像素的颜色（8位：R[7:5], G[4:2], B[1:0]）
+ *   rgb         - 当前像素的颜色（12位，R[11:8], G[7:4], B[3:0]）
  */
 
 module vga_screen_pic(
@@ -20,7 +20,7 @@ module vga_screen_pic(
     input wire [8:0] player_y,
     input wire [199:0] obstacle_x,
     input wire [179:0] obstacle_y,
-    output reg [7:0] rgb
+    output reg [11:0] rgb // 修改为12位输出
 );
 
     parameter PLAYER_X = 160;
@@ -35,11 +35,11 @@ module vga_screen_pic(
     always @(*) begin
         // 默认背景色
         case (gamemode)
-            2'b00: rgb = 8'b110_110_11; // 初始：浅蓝
-            2'b01: rgb = 8'b000_111_00; // 进行：绿色
-            2'b10: rgb = 8'b111_111_00; // 暂停：黄色
-            2'b11: rgb = 8'b111_000_00; // 结束：红色
-            default: rgb = 8'b000_000_00;
+            2'b00: rgb = 12'b1100_1100_1111; // 初始：浅蓝
+            2'b01: rgb = 12'b0000_1111_0000; // 进行：绿色
+            2'b10: rgb = 12'b1111_1111_0000; // 暂停：黄色
+            2'b11: rgb = 12'b1111_0000_0000; // 结束：红色
+            default: rgb = 12'b0000_0000_0000;
         endcase
 
         // 玩家区域检测
@@ -63,10 +63,10 @@ module vga_screen_pic(
 
         // 优先级：玩家 > 障碍物 > 背景
         if (obstacle_region) begin
-            rgb = 8'b111_011_00; // 橙色
+            rgb = 12'b1111_0111_0000; // 橙色
         end
         if (player_region) begin
-            rgb = 8'b000_000_11; // 蓝色
+            rgb = 12'b0000_0000_1111; // 蓝色
         end
     end
 
