@@ -33,3 +33,6 @@ set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[0]]
 set_property  PACKAGE_PIN AF24 [get_ports gamemode_led[0]]
 set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[1]]
 set_property  PACKAGE_PIN AE21 [get_ports gamemode_led[1]]
+
+set_property  IOSTANDARD LVCMOS15 [get_ports sw]
+set_property  PACKAGE_PIN AA10 [get_ports sw] 

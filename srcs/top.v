@@ -2,6 +2,7 @@ module top(
     input wire clk,          
     input wire RST_n,        
     input wire [2:0] btn,    
+    input wire sw;
     output wire [3:0] R,     
     output wire [3:0] G,     
     output wire [3:0] B,     
@@ -45,6 +46,7 @@ module top(
     game_logic u_game_logic (
         .rst_n(rst_n),
         .btn(btn_ok),
+        .sw(sw),
         .clk(clk_60hz),
         .obstacle_x(obstacle_x),
         .obstacle_y(obstacle_y),
@@ -85,5 +87,7 @@ module top(
         .HS(HS),             // 行同步信号
         .VS(VS)              // 场同步信号
     );
+
+    assign gamemode_led = gamemode;
 
 endmodule
