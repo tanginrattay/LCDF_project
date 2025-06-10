@@ -1,6 +1,6 @@
 module beep_gamestart(
     input clk,
-    input [1:0] memode, // 游戏状态变量
+    input [1:0] gamemode, // 游戏状态变量
     output reg beep
     );
 
