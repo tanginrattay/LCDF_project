@@ -29,3 +29,8 @@ set_property -dict {PACKAGE_PIN M22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports HS
 #set_property PACKAGE_PIN AA10 [get_ports {RST_n}]
 #set_property IOSTANDARD LVCMOS15 [get_ports {RST_n}]
 
+#PS2
+NET "PS2_clk"	LOC = N18     	| IOSTANDARD = LVCMOS33 ; 
+NET "PS2_data"	LOC = M19     	| IOSTANDARD = LVCMOS33 ;
+
+
