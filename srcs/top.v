@@ -6,7 +6,8 @@ module top(
     output wire [3:0] G,     
     output wire [3:0] B,     
     output wire HS,          
-    output wire VS,          
+    output wire VS,
+    output wire beep,       
     output [1:0] gamemode_led
 );
 
@@ -84,5 +85,11 @@ module top(
     );
 
     assign gamemode_led = gamemode;
+
+    top_beep u_top_beep(
+        .clk(clk),
+        .gamemode(gamemode),
+        .beep(beep)
+    );
 
 endmodule
