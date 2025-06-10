@@ -1,8 +1,7 @@
 module top(
     input wire clk,          
     input wire RST_n,        
-    input wire [2:0] btn,    
-    input wire sw;
+    input wire [2:0] sw,
     output wire [3:0] R,     
     output wire [3:0] G,     
     output wire [3:0] B,     
@@ -38,14 +37,10 @@ module top(
     wire [11:0] vga_data;  // VGA 像素颜色数据
     wire rdn;              // VGA 读使能信号
 
-    Anti_jitter mo(clk, btn[0], btn_ok[0]);
-    Anti_jitter m1(clk, btn[1], btn_ok[1]);
-    Anti_jitter m2(clk, btn[2], btn_ok[2]);
     Anti_jitter m3(clk, RST_n, rst_n);
 
     game_logic u_game_logic (
         .rst_n(rst_n),
-        .btn(btn_ok),
         .sw(sw),
         .clk(clk_60hz),
         .obstacle_x(obstacle_x),
