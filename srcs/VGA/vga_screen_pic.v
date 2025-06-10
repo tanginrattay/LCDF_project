@@ -3,8 +3,6 @@
  * 功能描述:
  *   根据game_logic的输出，生成VGA像素颜色信号，实现玩家、障碍物、背景的显示。
  * 输入端口:
- *   clk         - 时钟信号
- *   rst_n       - 异步复位
  *   pix_x       - 当前像素的X坐标
  *   pix_y       - 当前像素的Y坐标
  *   gamemode    - 游戏模式（来自game_logic）
@@ -16,8 +14,6 @@
  */
 
 module vga_screen_pic(
-    input wire clk,
-    input wire rst_n,
     input wire [9:0] pix_x,
     input wire [8:0] pix_y,
     input wire [1:0] gamemode,
