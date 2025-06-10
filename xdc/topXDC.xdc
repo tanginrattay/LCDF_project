@@ -35,6 +35,6 @@ set_property  IOSTANDARD LVCMOS15 [get_ports {sw[2]}]
 set_property  PACKAGE_PIN AB10 [get_ports {sw[1]}] 
 set_property  PACKAGE_PIN AA13 [get_ports {sw[2]}] 
 
-set_property PACKAGE_PIN AF24 [get_ports {Beep}]
-set_property IOSTANDARD LVCMOS33 [get_ports {Beep}]
+set_property PACKAGE_PIN AF24 [get_ports {beep}]
+set_property IOSTANDARD LVCMOS33 [get_ports {beep}]
 
