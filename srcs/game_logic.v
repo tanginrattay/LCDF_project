@@ -12,8 +12,8 @@ module game_logic(
     reg [1:0] crash;              // 00: no crash; 11: crash happened
     reg velocity_direction;       // 0: up; 1: down 
 
-    parameter UPER_BOUND    = 40;
-    parameter LOWER_BOUND   = 480;
+    parameter UPPER_BOUND    = 20;
+    parameter LOWER_BOUND   = 460;
     parameter PLAYER_SIZE   = 40;
     parameter MAX_VELOCITY  = 8;
     parameter ACCELERATION  = 1;
@@ -40,7 +40,7 @@ module game_logic(
     // 位置组合逻辑
     wire [8:0] player_y_calc = velocity_direction_next ? player_y + velocity_next : player_y - velocity_next;
     assign player_y_next = (gamemode == 2'b01) ? (
-        (player_y_calc < UPER_BOUND) ? UPER_BOUND :
+        (player_y_calc < UPPER_BOUND) ? UPPER_BOUND :
         (player_y_calc > LOWER_BOUND - PLAYER_SIZE) ? (LOWER_BOUND - PLAYER_SIZE) :
         player_y_calc
     ) : player_y;
@@ -48,7 +48,7 @@ module game_logic(
     // 时序逻辑部分
     always @(posedge clk) begin
         if (gamemode == 2'b00) begin
-            player_y           <= (LOWER_BOUND - UPER_BOUND) / 2;
+            player_y           <= (LOWER_BOUND - UPPER_BOUND) / 2;
             velocity           <= 0;
             crash              <= 2'b00;
             velocity_direction <= 0;

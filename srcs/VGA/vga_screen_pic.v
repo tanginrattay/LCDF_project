@@ -26,7 +26,8 @@ module vga_screen_pic(
 
     parameter PLAYER_X = 160;
     parameter PLAYER_SIZE = 40;
-    parameter UPPER_BOUND = 40;
+    parameter UPPER_BOUND = 20;
+    parameter LOWER_BOUND   = 460;
     parameter DEFAULT_COLOR = 12'b0000_0000_0000; // 黑色
 
     integer i;
@@ -38,7 +39,7 @@ module vga_screen_pic(
 
     always @(*) begin
         // 边界检测
-        out_bound_y = (pix_y <= UPPER_BOUND);
+        out_bound_y = (pix_y <= UPPER_BOUND) | (pix_y >= LOWER_BOUND);
 
         // 默认背景色
         case (gamemode)
