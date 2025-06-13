@@ -1,7 +1,6 @@
 module beep_gameover(
     input wire clk,          // 输入时钟信号
-    input wire rst_n,       // 复位信号，低有效
-    input wire [1:0] gememode, // 游戏状态变量
+    input wire [1:0] gamemode, // 游戏状态变量
     output reg beep         // 输出蜂鸣器信号
 );
   
@@ -38,8 +37,8 @@ module beep_gameover(
     assign duty_data = freq_data >> 1'b1;
 
 
-always @(gememode) begin
-        if (gememode == 2'b11) begin // 游戏结束页面
+always @(*) begin
+        if (gamemode == 2'b11) begin // 游戏结束页面
             rst = 1'b0; // rst 为 0 时，声波正常产生
         end 
         else begin
@@ -88,7 +87,7 @@ end
 
 always @(posedge clk or posedge rst) begin
         if (rst) begin
-            freq_data <= 18'd0;
+            freq_data <= 20'd0;
         end else begin
             case (cnt_125ms)
         6'd0: freq_data <= C4;
