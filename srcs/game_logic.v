@@ -8,6 +8,8 @@ module game_logic(
     output reg [8:0] player_y      // Player y coordinate
 );
 
+    integer k;
+
     wire sw_n = ~sw[0];
 
     reg [8:0] velocity;           // Player velocity for movement
@@ -17,6 +19,7 @@ module game_logic(
     parameter UPPER_BOUND    = 20;
     parameter LOWER_BOUND   = 460;
     parameter PLAYER_SIZE   = 40;
+    parameter PLAYER_X     = 160; // Player's x coordinate
     parameter MAX_VELOCITY  = 8;
     parameter ACCELERATION  = 1;
 
