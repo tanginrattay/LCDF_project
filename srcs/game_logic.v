@@ -59,6 +59,12 @@ module game_logic(
             velocity           <= velocity_next;
             velocity_direction <= velocity_direction_next;
             // crash 可根据你的游戏逻辑补充
+            for (k = 0; k < 10; k = k + 1) begin
+                if (obstacle_x[k * 20 +: 10] <= PLAYER_X + PLAYER_SIZE && obstacle_x[k * 20 + 10 +: 10] >= PLAYER_X &&
+                    obstacle_y[k * 18 +: 9] <= player_y + PLAYER_SIZE && obstacle_y[k * 18 + 9 +: 9] >= player_y) begin
+                    crash <= 2'b11; // 设置为崩溃状态
+                end
+            end
         end
     end
 
