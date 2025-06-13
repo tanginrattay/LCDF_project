@@ -8,6 +8,8 @@ module game_logic(
     output reg [8:0] player_y      // Player y coordinate
 );
 
+    wire sw_n = ~sw[0];
+
     reg [8:0] velocity;           // Player velocity for movement
     reg [1:0] crash;              // 00: no crash; 11: crash happened
     reg velocity_direction;       // 0: up; 1: down 
@@ -27,13 +29,13 @@ module game_logic(
 
     // 速度和方向组合逻辑
     assign velocity_next = (gamemode == 2'b01) ? (
-        (sw[0] == velocity_direction) ? 
+        (sw_n == velocity_direction) ? 
             ((velocity + ACCELERATION > MAX_VELOCITY) ? MAX_VELOCITY : velocity + ACCELERATION) :
             ((velocity < ACCELERATION) ? (ACCELERATION - velocity) : velocity - ACCELERATION)
     ) : 9'd0;
 
     assign velocity_direction_next = (gamemode == 2'b01) ? (
-        (sw[0] == velocity_direction) ? velocity_direction :
+        (sw_n == velocity_direction) ? velocity_direction :
             ((velocity < ACCELERATION) ? ~velocity_direction : velocity_direction)
     ) : 1'b0;
 
