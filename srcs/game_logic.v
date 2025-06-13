@@ -52,7 +52,7 @@ module game_logic(
 
     // 时序逻辑部分
     always @(posedge clk) begin
-        if (gamemode == 2'b00) begin
+        if (sw[2:1] == 2'b00) begin
             player_y           <= (LOWER_BOUND - UPPER_BOUND) / 2;
             velocity           <= 0;
             crash              <= 2'b00;
