@@ -1,17 +1,15 @@
 /*
- * Module name: vga_screen_pic
- * Function description:
- *   Generates VGA pixel color signals based on the output of game_logic, implementing the display of background, obstacles, and player.
- *   The screen resolution is 640*480, pixel coordinates range from 0-639 (x) and 0-479 (y).
- * Inputs:
- *   pix_x       - Current pixel x coordinate
- *   pix_y       - Current pixel y coordinate
- *   gamemode    - Game mode (from game_logic)
- *   player_y    - Player Y coordinate (from game_logic)
- *   obstacle_x  - X coordinates of 10 obstacles, each 20 bits (left 10 + right 10), total 200 bits
- *   obstacle_y  - Y coordinates of 10 obstacles, each 18 bits (top 9 + bottom 9), total 180 bits
- * Outputs:
- *   rgb         - Current pixel color (12 bits, R[11:8], G[7:4], B[3:0])
+ * 模块名称: vga_screen_pic
+ * 功能描述:
+ *   根据game_logic的输出，生成VGA像素颜色信号，实现玩家、障碍物、背景的显示。
+ *   屏幕是640*480分辨率，像素坐标范围为0-639（X）和0-479（Y）
+ * 输入端口:
+ *   pix_x       - 当前像素的X坐标
+ *   pix_y       - 当前像素的Y坐标
+ *   gamemode    - 游戏模式（来自game_logic）
+ *   player_y    - 玩家Y坐标（来自game_logic）
+ * 输出端口:
+ *   rgb         - 当前像素的颜色（12位，R[11:8], G[7:4], B[3:0]）
  */
 
 module vga_screen_pic(
@@ -21,14 +19,14 @@ module vga_screen_pic(
     input wire [8:0] player_y,
     input wire [59:0] obstacle_x,
     input wire [53:0] obstacle_y,
-    output reg [11:0] rgb // Changed to 12-bit output
+    output reg [11:0] rgb
 );
 
     parameter PLAYER_X = 160;
     parameter PLAYER_SIZE = 40;
     parameter UPPER_BOUND = 20;
     parameter LOWER_BOUND   = 460;
-    parameter DEFAULT_COLOR = 12'b0000_0000_0000; // Default color
+    parameter DEFAULT_COLOR = 12'b0000_0000_0000; // 黑色
 
     integer i;
     reg player_region;
@@ -43,10 +41,10 @@ module vga_screen_pic(
 
         // Default background color
         case (gamemode)
-            2'b00: rgb = 12'b0000_1111_0000; // Initial: green
-            2'b01: rgb = 12'b1111_1111_1111; // In-game: white
-            2'b10: rgb = 12'b1111_1111_0000; // Paused: yellow
-            2'b11: rgb = 12'b1111_0000_0000; // Ended: red
+            2'b00: rgb = 12'b0000_1111_0000; // 初始：绿色
+            2'b01: rgb = 12'b1111_1111_1111; // 进行：白色
+            2'b10: rgb = 12'b1111_1111_0000; // 暂停：黄色
+            2'b11: rgb = 12'b1111_0000_0000; // 结束：红色
             default: rgb = DEFAULT_COLOR;
         endcase
         // Change game background color based on gamemode
@@ -55,11 +53,11 @@ module vga_screen_pic(
             obstacle_region = 1'b0;
         end
         else begin
-            // Player region check
+            // 玩家区域检测
             player_region = (pix_x >= PLAYER_X) && (pix_x < PLAYER_X + PLAYER_SIZE) &&
                             (pix_y >= player_y) && (pix_y < player_y + PLAYER_SIZE);
 
-            // Obstacle region check
+            // 多障碍物检测（使用内部定义的障碍物坐标）
             obstacle_region = 1'b0;
             for (i = 0; i < 3; i = i + 1) begin
                 obs_x_left   = obstacle_x[i*10 +: 10];
@@ -74,16 +72,16 @@ module vga_screen_pic(
                 end
             end
 
-            // Priority: player > obstacle > background
+            // 优先级：玩家 > 障碍物 > 背景
             if (obstacle_region) begin
-                rgb = 12'b1111_0111_0000; // Orange
+                rgb = 12'b1111_0111_0000; // 橙色
             end
             if (player_region) begin
-                rgb = 12'b0000_0000_1111; // Blue
+                rgb = 12'b0000_0000_1111; // 蓝色
             end
         end
         if (out_bound_y)begin
-            rgb = DEFAULT_COLOR; // Default color
+            rgb = DEFAULT_COLOR; // 黑色
         end
     end
 
