@@ -71,6 +71,7 @@ module top(
     map u_map (
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),
+        .gamemode(gamemode),
         .obstacle_x(obstacle_x_bus),
         .obstacle_y(obstacle_y_bus)
     );

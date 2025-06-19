@@ -1,16 +1,17 @@
 // File: map.sv
-// Description: ÍêÈ«ÖØĞÂÉè¼ÆµÄÕÏ°­ÎïÉú³ÉÄ£¿é
-// ½â¾öY×ø±êÉú³ÉÎÊÌâ£¬È·±£ÕÏ°­ÎïÔÚÕû¸öÓÎÏ·ÇøÓòÄÚËæ»ú·Ö²¼
+// Description: å®Œå…¨é‡æ–°è®¾è®¡çš„éšœç¢ç‰©ç”Ÿæˆæ¨¡å—
+// è§£å†³Yåæ ‡ç”Ÿæˆé—®é¢˜ï¼Œç¡®ä¿éšœç¢ç‰©åœ¨æ•´ä¸ªæ¸¸æˆåŒºåŸŸå†…éšæœºåˆ†å¸ƒ
 
 module map(
     input wire rst_n,
     input wire clk, // Input clock (60Hz frame clock)
+    input wire [1:0] gamemode, // <-- æ–°å¢ï¼šgamemodeè¾“å…¥
     output logic [9:0] [19:0] obstacle_x,
     output logic [9:0] [17:0] obstacle_y
 );
 
 //================================================================
-// ²ÎÊı¶¨Òå
+// å‚æ•°å®šä¹‰
 //================================================================
 localparam NUM_OBSTACLES = 10;
 localparam SCREEN_WIDTH = 640;
@@ -18,8 +19,8 @@ localparam UPPER_BOUND = 20;
 localparam LOWER_BOUND = 440;
 localparam PLAY_AREA_HEIGHT = LOWER_BOUND - UPPER_BOUND; // 420
 
-// ÕÏ°­Îï²ÎÊı
-localparam SCROLL_SPEED = 2;
+// éšœç¢ç‰©å‚æ•°
+localparam SCROLL_SPEED = 2; // éšœç¢ç‰©ç§»åŠ¨é€Ÿåº¦
 localparam MIN_OBSTACLE_WIDTH = 20;
 localparam MAX_OBSTACLE_WIDTH = 80;
 localparam MIN_OBSTACLE_HEIGHT = 20;
@@ -28,34 +29,36 @@ localparam MIN_GAP = 120;
 localparam MAX_GAP = 250;
 
 //================================================================
-// ÄÚ²¿ĞÅºÅ¶¨Òå
+// å†…éƒ¨ä¿¡å·å®šä¹‰
 //================================================================
-// ÕÏ°­Îï×´Ì¬¼Ä´æÆ÷
+// éšœç¢ç‰©çŠ¶æ€å¯„å­˜å™¨
 reg [NUM_OBSTACLES-1:0] active;
-reg [10:0] pos_x [0:NUM_OBSTACLES-1];  // Ö§³Ö¸ºÊıÓÃÓÚÔ½½ç¼ì²â
+reg [10:0] pos_x [0:NUM_OBSTACLES-1];  // æ”¯æŒè´Ÿæ•°ç”¨äºè¶Šç•Œæ£€æµ‹
 reg [8:0]  pos_y [0:NUM_OBSTACLES-1];
-reg [6:0]  width [0:NUM_OBSTACLES-1];  // ¼õÉÙÎ»¿í£¬×ã¹»´æ´¢20-80
+reg [6:0]  width [0:NUM_OBSTACLES-1];  // å‡å°‘ä½å®½ï¼Œè¶³å¤Ÿå­˜å‚¨20-80
 reg [7:0]  height [0:NUM_OBSTACLES-1];
 
-// Éú³É¿ØÖÆ
+// ç”Ÿæˆæ§åˆ¶
 reg [10:0] next_spawn_x;
 reg [31:0] rng_state;
-reg [3:0] spawn_counter; // ·ÀÖ¹Í¬Ò»Ö¡Éú³É¶à¸öÕÏ°­Îï
+reg [3:0] spawn_counter; // é˜²æ­¢åŒä¸€å¸§ç”Ÿæˆå¤šä¸ªéšœç¢ç‰©
+
+reg [1:0] gamemode_prev; // <-- æ–°å¢ï¼šç”¨äºæ£€æµ‹gamemodeå˜åŒ–
 
 //================================================================
-// Ëæ»úÊıÉú³ÉÆ÷ (32Î»LFSR)
+// éšæœºæ•°ç”Ÿæˆå™¨ (32ä½LFSR)
 //================================================================
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        rng_state <= 32'h12345678; // ±ÜÃâÈ«0×´Ì¬
+        rng_state <= 32'h12345678; // é¿å…å…¨0çŠ¶æ€
     end else begin
-        // 32Î»LFSR: x^32 + x^22 + x^2 + x^1 + 1
+        // 32ä½LFSR: x^32 + x^22 + x^2 + x^1 + 1
         rng_state <= {rng_state[30:0], rng_state[31] ^ rng_state[21] ^ rng_state[1] ^ rng_state[0]};
     end
 end
 
 //================================================================
-// Ëæ»úÊıÌáÈ¡º¯Êı
+// éšæœºæ•°æå–å‡½æ•° (ä¿æŒä¸å˜)
 //================================================================
 function automatic [7:0] get_random_width;
     input [31:0] rng;
@@ -76,12 +79,12 @@ function automatic [8:0] get_random_y_position;
     input [7:0] obstacle_height;
     reg [8:0] max_y_pos;
     begin
-        // È·±£ÕÏ°­ÎïÍêÈ«ÔÚÓÎÏ·ÇøÓòÄÚ
+        // ç¡®ä¿éšœç¢ç‰©å®Œå…¨åœ¨æ¸¸æˆåŒºåŸŸå†…
         max_y_pos = LOWER_BOUND - obstacle_height;
         if (max_y_pos <= UPPER_BOUND) begin
             get_random_y_position = UPPER_BOUND;
         end else begin
-            // ÔÚUPPER_BOUNDµ½max_y_posÖ®¼äËæ»úÑ¡Ôñ
+            // åœ¨UPPER_BOUNDåˆ°max_y_posä¹‹é—´éšæœºé€‰æ‹©
             get_random_y_position = UPPER_BOUND + (rng[31:24] % (max_y_pos - UPPER_BOUND + 1));
         end
     end
@@ -95,100 +98,126 @@ function automatic [7:0] get_random_gap;
 endfunction
 
 //================================================================
-// Ö÷×´Ì¬»ú
+// ä¸»çŠ¶æ€æœº
 //================================================================
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        // ÖØÖÃËùÓĞ×´Ì¬
+        // é‡ç½®æ‰€æœ‰çŠ¶æ€
         next_spawn_x <= SCREEN_WIDTH + MIN_GAP;
         spawn_counter <= 0;
-        
+        gamemode_prev <= 2'b00; // åˆå§‹åŒ–gamemode_prev
         for (integer i = 0; i < NUM_OBSTACLES; i++) begin
             active[i] <= 1'b0;
-            pos_x[i] <= SCREEN_WIDTH + 100; // ³õÊ¼Î»ÖÃÔÚÆÁÄ»Íâ
+            pos_x[i] <= SCREEN_WIDTH + 100; // åˆå§‹ä½ç½®åœ¨å±å¹•å¤–
             pos_y[i] <= UPPER_BOUND;
             width[i] <= MIN_OBSTACLE_WIDTH;
             height[i] <= MIN_OBSTACLE_HEIGHT;
         end
         
     end else begin
-        
-        // ¸üĞÂÉú³É¼ÆÊıÆ÷£¨ÓÃÓÚÊ±Ğò¿ØÖÆ£©
-        spawn_counter <= spawn_counter + 1;
-        
-        //------------------------------------------------------------
-        // 1. ÒÆ¶¯ËùÓĞ»îÔ¾µÄÕÏ°­Îï
-        //------------------------------------------------------------
-        for (integer i = 0; i < NUM_OBSTACLES; i++) begin
-            if (active[i]) begin
-                pos_x[i] <= pos_x[i] - SCROLL_SPEED;
-            end
-        end
-        
-        // ÒÆ¶¯ÏÂ´ÎÉú³ÉÎ»ÖÃ
-        next_spawn_x <= next_spawn_x - SCROLL_SPEED;
-        
-        //------------------------------------------------------------
-        // 2. »ØÊÕ³¬³öÆÁÄ»µÄÕÏ°­Îï
-        //------------------------------------------------------------
-        for (integer i = 0; i < NUM_OBSTACLES; i++) begin
-            if (active[i] && (pos_x[i] + width[i] < 0)) begin
-                active[i] <= 1'b0;
-            end
-        end
-        
-        //------------------------------------------------------------
-        // 3. Éú³ÉĞÂÕÏ°­Îï
-        //------------------------------------------------------------
-        if (next_spawn_x <= SCREEN_WIDTH && spawn_counter[1:0] == 2'b00) begin
-            // Ñ°ÕÒ¿ÕÏĞ²ÛÎ»
+        // æ›´æ–°gamemode_prev
+        gamemode_prev <= gamemode;
+
+        // gamemode 00: ä¸ç”Ÿæˆéšœç¢ç‰©ï¼Œå±å¹•ä¸ºç©º
+        if (gamemode == 2'b00) begin
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
-                if (!active[i]) begin
-                    // Éú³ÉĞÂÕÏ°­Îï
-                    reg [7:0] new_width, new_height;
-                    reg [8:0] new_y_pos;
-                    reg [7:0] gap_size;
-                    
-                    // ¼ÆËãĞÂÕÏ°­Îï²ÎÊı
-                    new_width = get_random_width(rng_state);
-                    new_height = get_random_height(rng_state);
-                    new_y_pos = get_random_y_position(rng_state, new_height);
-                    gap_size = get_random_gap(rng_state);
-                    
-                    // ÉèÖÃÕÏ°­Îï
-                    active[i] <= 1'b1;
-                    pos_x[i] <= SCREEN_WIDTH;
-                    pos_y[i] <= new_y_pos;
-                    width[i] <= new_width[6:0];
-                    height[i] <= new_height;
-                    
-                    // ÉèÖÃÏÂ´ÎÉú³ÉÎ»ÖÃ
-                    next_spawn_x <= SCREEN_WIDTH + gap_size;
-                    
-                    // Ö»Éú³ÉÒ»¸öºóÍË³öÑ­»·
-                    break;
+                active[i] <= 1'b0; // è®¾ç½®ä¸ºéæ´»è·ƒ
+                pos_x[i] <= SCREEN_WIDTH + 100; // ç¡®ä¿åœ¨å±å¹•å¤–
+            end
+            next_spawn_x <= SCREEN_WIDTH + MIN_GAP; // é‡ç½®ä¸‹æ¬¡ç”Ÿæˆä½ç½®
+            spawn_counter <= 0; // é‡ç½®ç”Ÿæˆè®¡æ•°å™¨
+        end 
+        // gamemode 01: éšœç¢ç‰©ä»å·¦ä¾§å¼€å§‹å‡ºç°ï¼Œä»¥ä¸åŒé€Ÿåº¦å³ç§» (è¿™é‡ŒæŒ‡æ•´ä½“å‘å·¦ç§»åŠ¨ï¼Œç©å®¶ç›¸å¯¹å³ç§»)
+        else if (gamemode == 2'b01) begin
+            // æ£€æµ‹ä»gamemode 00 åˆ‡æ¢åˆ° 01 çš„è¾¹ç¼˜ï¼Œæ¸…ç©ºå±å¹•
+            if (gamemode_prev == 2'b00) begin
+                for (integer i = 0; i < NUM_OBSTACLES; i++) begin
+                    active[i] <= 1'b0;
+                    pos_x[i] <= SCREEN_WIDTH + 100; // æ¸…ç©ºéšœç¢ç‰©
+                end
+                next_spawn_x <= SCREEN_WIDTH + MIN_GAP; // é‡ç½®ç”Ÿæˆä½ç½®
+                spawn_counter <= 0; // é‡ç½®ç”Ÿæˆè®¡æ•°å™¨
+            end
+
+            // æ›´æ–°ç”Ÿæˆè®¡æ•°å™¨ï¼ˆç”¨äºæ—¶åºæ§åˆ¶ï¼‰
+            spawn_counter <= spawn_counter + 1;
+            
+            //------------------------------------------------------------
+            // 1. ç§»åŠ¨æ‰€æœ‰æ´»è·ƒçš„éšœç¢ç‰©
+            //------------------------------------------------------------
+            for (integer i = 0; i < NUM_OBSTACLES; i++) begin
+                if (active[i]) begin
+                    pos_x[i] <= pos_x[i] - SCROLL_SPEED; // éšœç¢ç‰©å‘å·¦ç§»åŠ¨
+                end
+            end
+            
+            // ç§»åŠ¨ä¸‹æ¬¡ç”Ÿæˆä½ç½®
+            next_spawn_x <= next_spawn_x - SCROLL_SPEED;
+            
+            //------------------------------------------------------------
+            // 2. å›æ”¶è¶…å‡ºå±å¹•çš„éšœç¢ç‰©
+            //------------------------------------------------------------
+            for (integer i = 0; i < NUM_OBSTACLES; i++) begin
+                if (active[i] && (pos_x[i] + width[i] < 0)) begin
+                    active[i] <= 1'b0;
+                end
+            end
+            
+            //------------------------------------------------------------
+            // 3. ç”Ÿæˆæ–°éšœç¢ç‰©
+            //------------------------------------------------------------
+            if (next_spawn_x <= SCREEN_WIDTH && spawn_counter[1:0] == 2'b00) begin
+                // å¯»æ‰¾ç©ºé—²æ§½ä½
+                for (integer i = 0; i < NUM_OBSTACLES; i++) begin
+                    if (!active[i]) begin
+                        // ç”Ÿæˆæ–°éšœç¢ç‰©
+                        reg [7:0] new_width, new_height;
+                        reg [8:0] new_y_pos;
+                        reg [7:0] gap_size;
+                        
+                        // è®¡ç®—æ–°éšœç¢ç‰©å‚æ•°
+                        new_width = get_random_width(rng_state);
+                        new_height = get_random_height(rng_state);
+                        new_y_pos = get_random_y_position(rng_state, new_height);
+                        gap_size = get_random_gap(rng_state);
+                        
+                        // è®¾ç½®éšœç¢ç‰©
+                        active[i] <= 1'b1;
+                        pos_x[i] <= SCREEN_WIDTH;
+                        pos_y[i] <= new_y_pos;
+                        width[i] <= new_width[6:0];
+                        height[i] <= new_height;
+                        
+                        // è®¾ç½®ä¸‹æ¬¡ç”Ÿæˆä½ç½®
+                        next_spawn_x <= SCREEN_WIDTH + gap_size;
+                        
+                        // åªç”Ÿæˆä¸€ä¸ªåé€€å‡ºå¾ªç¯
+                        break;
+                    end
                 end
             end
         end
+        // gamemode 10 å’Œ 11: éšœç¢ç‰©ä¸åŠ¨ã€‚
+        // ç”±äºä¸Šè¿°if-else ifç»“æ„ï¼Œå½“gamemodeä¸º10æˆ–11æ—¶ï¼Œæ­¤always_ffå—ä¸­çš„éšœç¢ç‰©ç§»åŠ¨å’Œç”Ÿæˆé€»è¾‘å°†ä¸ä¼šæ‰§è¡Œï¼Œ
+        // éšœç¢ç‰©çš„pos_xå’ŒactiveçŠ¶æ€å°†ä¿æŒä¸å˜ï¼Œä»è€Œå®ç°éšœç¢ç‰©é™æ­¢ã€‚
     end
 end
 
 //================================================================
-// Êä³öÂß¼­
+// è¾“å‡ºé€»è¾‘ (ä¿æŒä¸å˜)
 //================================================================
 always_comb begin
     for (integer k = 0; k < NUM_OBSTACLES; k++) begin
         if (active[k] && pos_x[k] >= 0 && pos_x[k] < SCREEN_WIDTH) begin
-            // »îÔ¾ÇÒÔÚÆÁÄ»ÄÚµÄÕÏ°­Îï
+            // æ´»è·ƒä¸”åœ¨å±å¹•å†…çš„éšœç¢ç‰©
             obstacle_x[k] = {10'(pos_x[k]), 10'(pos_x[k] + width[k])};
             obstacle_y[k] = {pos_y[k], 9'(pos_y[k] + height[k])};
         end else begin
-            // ·Ç»îÔ¾»ò³¬³öÆÁÄ»µÄÕÏ°­Îï£¬·ÅÖÃÔÚÆÁÄ»Íâ
+            // éæ´»è·ƒæˆ–è¶…å‡ºå±å¹•çš„éšœç¢ç‰©ï¼Œæ”¾ç½®åœ¨å±å¹•å¤–
             obstacle_x[k] = {10'd700, 10'd700};
             obstacle_y[k] = {9'd500, 9'd500};
         end
     end
 end
-
 
 endmodule
