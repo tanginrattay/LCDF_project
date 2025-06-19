@@ -28,15 +28,15 @@ module top(
     wire [1:0] gamemode;          
     wire [9:0] player_y;          
     wire [2:0] btn_ok;                  
-    wire [199:0] obstacle_x;      
-    wire [179:0] obstacle_y;      
+    wire [29:0] obstacle_x;      
+    wire [26:0] obstacle_y;      
 
 
-    // VGA相关信号
-    wire [9:0] pix_x;      // VGA 当前像素X坐标
-    wire [8:0] pix_y;      // VGA 当前像素Y坐标
-    wire [11:0] vga_data;  // VGA 像素颜色数据
-    wire rdn;              // VGA 读使能信号
+    // VGA related signals
+    wire [9:0] pix_x;      // VGA current pixel X coordinate
+    wire [8:0] pix_y;      // VGA current pixel Y coordinate
+    wire [11:0] vga_data;  // VGA pixel color data
+    wire rdn;              // VGA read enable signal
 
     Anti_jitter m3(clk, RST_n, rst_n);
 
@@ -58,7 +58,7 @@ module top(
     );
 
 
-    // VGA屏幕图像生成模块
+    // VGA screen image generation module
     vga_screen_pic u_vga_screen_pic(
         .pix_x(pix_x),
         .pix_y(pix_y),
@@ -66,30 +66,30 @@ module top(
         .player_y(player_y),
         .obstacle_x(obstacle_x),
         .obstacle_y(obstacle_y),
-        .rgb({vga_data[11:8], vga_data[7:4], vga_data[3:0]})  // 转换为12位RGB格式
+        .rgb({vga_data[11:8], vga_data[7:4], vga_data[3:0]})  // Convert to 12-bit RGB format
     );
 
-    // VGA控制器
+    // VGA controller
     vga_ctrl u_vga_ctrl(
-        .clk(clk_25mhz),      // 25MHz VGA时钟
-        .rst(~rst_n),         // 高电平有效的复位信号
-        .Din(vga_data),       // 像素数据输入
-        .row(pix_y),          // 像素Y坐标
-        .col(pix_x),          // 像素X坐标
-        .rdn(rdn),            // 读使能信号
-        .R(R),                // 红色分量输出
-        .G(G),                // 绿色分量输出
-        .B(B),                // 蓝色分量输出
-        .HS(HS),             // 行同步信号
-        .VS(VS)              // 场同步信号
+        .clk(clk_25mhz),      // 25MHz VGA clock
+        .rst(~rst_n),         // Active-high reset signal
+        .Din(vga_data),       // Pixel data input
+        .row(pix_y),          // Pixel Y coordinate
+        .col(pix_x),          // Pixel X coordinate
+        .rdn(rdn),            // Read enable signal
+        .R(R),                // Red output
+        .G(G),                // Green output
+        .B(B),                // Blue output
+        .HS(HS),             // Horizontal sync
+        .VS(VS)              // Vertical sync
     );
 
     assign gamemode_led = gamemode;
 
-    top_beep u_top_beep(
-        .clk(clk),
-        .gamemode(gamemode),
-        .beep(beep)
-    );
+   top_beep u_top_beep(
+       .clk(clk),
+       .gamemode(gamemode),
+       .beep(beep)
+   );
 
 endmodule
