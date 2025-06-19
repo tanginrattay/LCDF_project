@@ -8,8 +8,7 @@
  *   pix_y       - 当前像素的Y坐标
  *   gamemode    - 游戏模式（来自game_logic）
  *   player_y    - 玩家Y坐标（来自game_logic）
- *   obstacle_x  - 10个障碍物的X坐标范围，每个20位（从高到低：左10+右10），共200位
- *   obstacle_y  - 10个障碍物的Y坐标范围，每个18位（从高到低：上9+下9），共180位
+ *   //TODO:这里要添加obstacle的说明
  * 输出端口:
  *   rgb         - 当前像素的颜色（12位，R[11:8], G[7:4], B[3:0]）
  */
@@ -19,6 +18,7 @@ module vga_screen_pic(
     input wire [8:0] pix_y,
     input wire [1:0] gamemode,
     input wire [8:0] player_y,
+    //TODO:这里要修改
     input wire [199:0] obstacle_x,
     input wire [179:0] obstacle_y,
     output reg [11:0] rgb // 修改为12位输出
@@ -26,7 +26,8 @@ module vga_screen_pic(
 
     parameter PLAYER_X = 160;
     parameter PLAYER_SIZE = 40;
-    parameter UPPER_BOUND = 40;
+    parameter UPPER_BOUND = 20;
+    parameter LOWER_BOUND = 460;
     parameter DEFAULT_COLOR = 12'b0000_0000_0000; // 黑色
 
     integer i;
@@ -36,26 +37,25 @@ module vga_screen_pic(
     reg [8:0] obs_y_top, obs_y_bottom;
     reg out_bound_y; // y坐标边界检测
 
-    // 固定障碍物坐标用于逻辑测试
-    // 这里只设置第一个障碍物，其余障碍物坐标全为0
-    // obs_x_left = 300, obs_x_right = 340, obs_y_top = 100, obs_y_bottom = 140
-    // obstacle_x: [19:10] = 10'b0100101100 (300), [9:0] = 10'b0101010100 (340)
-    // obstacle_y: [17:9] = 9'b001100100 (100), [8:0] = 9'b010001100 (140)
-    wire [9:0] test_obs_x_left   = 10'd300;
-    wire [9:0] test_obs_x_right  = 10'd340;
-    wire [8:0] test_obs_y_top    = 9'd100;
-    wire [8:0] test_obs_y_bottom = 9'd140;
+    // 定义10个障碍物的坐标（示例：横向均匀分布，大小40x40）
+    reg [9:0] obs_x_left_arr [0:9];
+    reg [9:0] obs_x_right_arr [0:9];
+    reg [8:0] obs_y_top_arr [0:9];
+    reg [8:0] obs_y_bottom_arr [0:9];
 
-    // 只用第一个障碍物，其他障碍物坐标全为0
-    wire [199:0] test_obstacle_x = {180'd0, test_obs_x_left, test_obs_x_right};
-    wire [179:0] test_obstacle_y = {162'd0, test_obs_y_top, test_obs_y_bottom};
-
-    // 用测试用障碍物坐标替换输入
-    wire [199:0] obstacle_x_test = test_obstacle_x;
-    wire [179:0] obstacle_y_test = test_obstacle_y;
-
-    // 修改障碍物检测循环，使用测试用坐标
     always @(*) begin
+        // 下板可综合的障碍物坐标赋值
+        obs_x_left_arr[0] = 10'd100;  obs_x_right_arr[0] = 10'd140;  obs_y_top_arr[0] = 9'd100;  obs_y_bottom_arr[0] = 9'd140;
+        obs_x_left_arr[1] = 10'd160;  obs_x_right_arr[1] = 10'd200;  obs_y_top_arr[1] = 9'd120;  obs_y_bottom_arr[1] = 9'd160;
+        obs_x_left_arr[2] = 10'd220;  obs_x_right_arr[2] = 10'd260;  obs_y_top_arr[2] = 9'd140;  obs_y_bottom_arr[2] = 9'd180;
+        obs_x_left_arr[3] = 10'd280;  obs_x_right_arr[3] = 10'd320;  obs_y_top_arr[3] = 9'd160;  obs_y_bottom_arr[3] = 9'd200;
+        obs_x_left_arr[4] = 10'd340;  obs_x_right_arr[4] = 10'd380;  obs_y_top_arr[4] = 9'd180;  obs_y_bottom_arr[4] = 9'd220;
+        obs_x_left_arr[5] = 10'd400;  obs_x_right_arr[5] = 10'd440;  obs_y_top_arr[5] = 9'd200;  obs_y_bottom_arr[5] = 9'd240;
+        obs_x_left_arr[6] = 10'd460;  obs_x_right_arr[6] = 10'd500;  obs_y_top_arr[6] = 9'd220;  obs_y_bottom_arr[6] = 9'd260;
+        obs_x_left_arr[7] = 10'd520;  obs_x_right_arr[7] = 10'd560;  obs_y_top_arr[7] = 9'd240;  obs_y_bottom_arr[7] = 9'd280;
+        obs_x_left_arr[8] = 10'd580;  obs_x_right_arr[8] = 10'd620;  obs_y_top_arr[8] = 9'd260;  obs_y_bottom_arr[8] = 9'd300;
+        obs_x_left_arr[9] = 10'd50;   obs_x_right_arr[9] = 10'd90;   obs_y_top_arr[9] = 9'd300;  obs_y_bottom_arr[9] = 9'd340;
+
         // 边界检测
         out_bound_y = (pix_y <= UPPER_BOUND);
 
@@ -76,23 +76,19 @@ module vga_screen_pic(
             player_region = (pix_x >= PLAYER_X) && (pix_x < PLAYER_X + PLAYER_SIZE) &&
                             (pix_y >= player_y) && (pix_y < player_y + PLAYER_SIZE);
 
-            // VERIFIED: The test logic below for a single, hardcoded obstacle
-            // correctly extracts coordinates and checks for pixel collision.
-            // obstacle_region is set appropriately for this single obstacle.
-            // 障碍物区域检测（只检测第一个障碍物）
-            obs_x_left   = obstacle_x_test[19:10];
-            obs_x_right  = obstacle_x_test[9:0];
-            obs_y_top    = obstacle_y_test[17:9];
-            obs_y_bottom = obstacle_y_test[8:0];
-            if (!(obs_x_left == obs_x_right && obs_y_top == obs_y_bottom)) begin
-                if (pix_x >= obs_x_left && pix_x < obs_x_right &&
-                    pix_y >= obs_y_top && pix_y < obs_y_bottom) begin
-                    obstacle_region = 1'b1;end 
-                else begin
-                    obstacle_region = 1'b0;end
-            end 
-            else begin
-                obstacle_region = 1'b0;
+            // 多障碍物检测（使用内部定义的障碍物坐标）
+            obstacle_region = 1'b0;
+            for (i = 0; i < 10; i = i + 1) begin
+                obs_x_left   = obs_x_left_arr[i];
+                obs_x_right  = obs_x_right_arr[i];
+                obs_y_top    = obs_y_top_arr[i];
+                obs_y_bottom = obs_y_bottom_arr[i];
+                if (!(obs_x_left == obs_x_right && obs_y_top == obs_y_bottom)) begin
+                    if (pix_x >= obs_x_left && pix_x < obs_x_right &&
+                        pix_y >= obs_y_top && pix_y < obs_y_bottom) begin
+                        obstacle_region = 1'b1;
+                    end
+                end
             end
 
             // 优先级：玩家 > 障碍物 > 背景
@@ -107,7 +103,7 @@ module vga_screen_pic(
             rgb = DEFAULT_COLOR; // 黑色
         end
     end
-
+    //TODO：下面是原来稳定的可以使用的代码
     // always @(*) begin
     //     // 边界检测
     //     out_bound_y = (pix_y <= UPPER_BOUND);
