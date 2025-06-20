@@ -108,6 +108,7 @@ module top(
     vga_screen_pic u_vga_screen_pic(
         .pix_x(pix_x),
         .pix_y(pix_y),
+        .clk(clk)
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
         .obstacle_x_left(obstacle_x_left_vga),

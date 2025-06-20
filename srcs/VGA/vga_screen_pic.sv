@@ -1,6 +1,7 @@
 module vga_screen_pic(
     input wire [9:0] pix_x,
     input wire [8:0] pix_y,
+    input wire clk,
     input wire [1:0] gamemode,
     input wire [8:0] player_y,
     input logic [9:0] [9:0] obstacle_x_game_left,
@@ -21,7 +22,20 @@ module vga_screen_pic(
     parameter COLOR_ENDED   = 12'hF00; // Red
     parameter COLOR_OBSTACLE = 12'hFA0; // Orange
     parameter COLOR_PLAYER  = 12'h00F; // Blue
+
+//TODO:这里的小图片还没用上
+    parameter H_PIC = 10'd16, // 小图片高度
+            SCREEN_W_PIC = 19'd640; // VGA 宽度
     
+    wire [11:0] game_start_data; // Start screen data
+    wire [18:0] pic_romaddr1; // 大图片的 ROM 地址
+    assign pic_romaddr1 = pix_x + pix_y * SCREEN_W_PIC; // 大图片的宽度和 VGA 的宽度相同
+
+    blk_mem_gen_0 start1 (
+        .clka(clk),    // input wire clka
+        .addra(pic_romaddr1),  // input wire [18 : 0] addra
+        .douta(game_start_data)  // output wire [11 : 0] douta
+    );
     always_comb begin
         // Default background color
         case (gamemode)
@@ -32,6 +46,9 @@ module vga_screen_pic(
             default: rgb = DEFAULT_COLOR;
         endcase
         
+        if(gamemode == 2'b00) begin
+            rgb = game_start_data; // Display start screen data
+        end
         // Only draw game objects during gameplay
         if (gamemode != 2'b00) begin
             // Check if on obstacle (optimization: calculate directly in condition)
