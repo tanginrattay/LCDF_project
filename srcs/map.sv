@@ -10,8 +10,10 @@ module map(
     input wire rst_n,
     input wire clk, // Input clock (60Hz frame clock)
     input wire [1:0] gamemode,
-    output logic [9:0] [19:0] obstacle_x,
-    output logic [9:0] [17:0] obstacle_y
+    output logic [9:0] [9:0] obstacle_x_left,
+    output logic [9:0] [9:0] obstacle_x_right,
+    output logic [9:0] [8:0] obstacle_y_up,
+    output logic [9:0] [8:0] obstacle_y_down
 );
 
 //================================================================
@@ -53,8 +55,10 @@ reg [10:0] next_spawn_x;
 reg [1:0] gamemode_prev;
 
 // Registered outputs
-reg [9:0] [19:0] obstacle_x_reg;
-reg [9:0] [17:0] obstacle_y_reg;
+reg [9:0] [9:0] obstacle_x_left_reg;
+reg [9:0] [9:0] obstacle_x_right_reg;
+reg [9:0] [8:0] obstacle_y_up_reg;
+reg [9:0] [8:0] obstacle_y_down_reg;
 
 //================================================================
 // 高强度随机数生成系统
@@ -387,23 +391,31 @@ end
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         for (integer k = 0; k < NUM_OBSTACLES; k++) begin
-            obstacle_x_reg[k] <= {10'd700, 10'd700};
-            obstacle_y_reg[k] <= {9'd500, 9'd500};
+            obstacle_x_left_reg[k]  <= 10'd700;
+            obstacle_x_right_reg[k] <= 10'd700;
+            obstacle_y_up_reg[k]    <= 9'd500;
+            obstacle_y_down_reg[k]  <= 9'd500;
         end
     end else begin
         for (integer k = 0; k < NUM_OBSTACLES; k++) begin
             if (active[k] && pos_x[k] >= 0 && pos_x[k] < SCREEN_WIDTH) begin
-                obstacle_x_reg[k] <= {10'(pos_x[k]), 10'(pos_x[k] + width[k])};
-                obstacle_y_reg[k] <= {pos_y[k], 9'(pos_y[k] + height[k])};
+                obstacle_x_left_reg[k]  <= 10'(pos_x[k]);
+                obstacle_x_right_reg[k] <= 10'(pos_x[k] + width[k]);
+                obstacle_y_up_reg[k]    <= pos_y[k];
+                obstacle_y_down_reg[k]  <= 9'(pos_y[k] + height[k]);
             end else begin
-                obstacle_x_reg[k] <= {10'd700, 10'd700};
-                obstacle_y_reg[k] <= {9'd500, 9'd500};
+                obstacle_x_left_reg[k]  <= 10'd700;
+                obstacle_x_right_reg[k] <= 10'd700;
+                obstacle_y_up_reg[k]    <= 9'd500;
+                obstacle_y_down_reg[k]  <= 9'd500;
             end
         end
     end
 end
 
-assign obstacle_x = obstacle_x_reg;
-assign obstacle_y = obstacle_y_reg;
+assign obstacle_x_left  = obstacle_x_left_reg;
+assign obstacle_x_right = obstacle_x_right_reg;
+assign obstacle_y_up    = obstacle_y_up_reg;
+assign obstacle_y_down  = obstacle_y_down_reg;
 
 endmodule

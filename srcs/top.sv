@@ -24,12 +24,16 @@ module top(
     wire [8:0] player_y;
     
     // 游戏逻辑时钟域的障碍物数据
-    logic [9:0] [19:0] obstacle_x_game;
-    logic [9:0] [17:0] obstacle_y_game;
-    
+    logic [9:0] [9:0] obstacle_x_game_left;
+    logic [9:0] [9:0] obstacle_x_game_right;
+    logic [9:0] [8:0] obstacle_y_game_up;
+    logic [9:0] [8:0] obstacle_y_game_down;
+
     // VGA时钟域的障碍物数据（双缓冲）
-    logic [9:0] [19:0] obstacle_x_vga;
-    logic [9:0] [17:0] obstacle_y_vga;
+    logic [9:0] [9:0] obstacle_x_left_vga;
+    logic [9:0] [9:0] obstacle_x_right_vga;
+    logic [9:0] [8:0] obstacle_y_up_vga;
+    logic [9:0] [8:0] obstacle_y_down_vga;
     logic [8:0] player_y_vga;
     logic [1:0] gamemode_vga;
     
@@ -58,16 +62,19 @@ module top(
     always_ff @(posedge clk_25mhz or negedge rst_n_debounced) begin
         if (!rst_n_debounced) begin
             for (integer i = 0; i < 10; i++) begin
-                obstacle_x_vga[i] <= {10'd700, 10'd700};
-                obstacle_y_vga[i] <= {9'd500, 9'd500};
+                obstacle_x_left_vga[i] <= 10'd700;
+                obstacle_x_right_vga[i] <= 10'd700;
+                obstacle_y_up_vga[i] <= 9'd500;
+                obstacle_y_down_vga[i] <= 9'd500;
             end
             player_y_vga <= 9'd240;
             gamemode_vga <= 2'b00;
         end else begin
-            // 在VGA时钟域同步所有显示数据
-            // 这确保VGA读取到的数据在整个显示周期内保持一致
-            obstacle_x_vga <= obstacle_x_game;
-            obstacle_y_vga <= obstacle_y_game;
+            // Synchronize all display data to VGA clock domain
+            obstacle_x_left_vga <= obstacle_x_game_left;
+            obstacle_x_right_vga <= obstacle_x_game_right;
+            obstacle_y_up_vga <= obstacle_y_game_up;
+            obstacle_y_down_vga <= obstacle_y_game_down;
             player_y_vga <= player_y;
             gamemode_vga <= gamemode;
         end
@@ -78,8 +85,10 @@ module top(
         .rst_n(rst_n_debounced),
         .sw(sw),
         .clk(clk_60hz),                    // 使用60Hz时钟
-        .obstacle_x(obstacle_x_game),      // 输出到游戏时钟域
-        .obstacle_y(obstacle_y_game),      // 输出到游戏时钟域
+        .obstacle_x_left(obstacle_x_game_left),
+        .obstacle_x_right(obstacle_x_game_right),
+        .obstacle_y_up(obstacle_y_game_up),
+        .obstacle_y_down(obstacle_y_game_down),
         .gamemode(gamemode),
         .player_y(player_y)
     );
@@ -89,8 +98,10 @@ module top(
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
-        .obstacle_x(obstacle_x_game),      // 输出到游戏时钟域
-        .obstacle_y(obstacle_y_game)       // 输出到游戏时钟域
+        .obstacle_x_left(obstacle_x_game_left),
+        .obstacle_x_right(obstacle_x_game_right),
+        .obstacle_y_up(obstacle_y_game_up),
+        .obstacle_y_down(obstacle_y_game_down)
     );
 
     // --- VGA Screen Picture Generator ---
@@ -99,8 +110,10 @@ module top(
         .pix_y(pix_y),
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
-        .obstacle_x(obstacle_x_vga),       // 使用VGA时钟域的同步数据
-        .obstacle_y(obstacle_y_vga),       // 使用VGA时钟域的同步数据
+        .obstacle_x_left(obstacle_x_left_vga),
+        .obstacle_x_right(obstacle_x_right_vga),
+        .obstacle_y_up(obstacle_y_up_vga),
+        .obstacle_y_down(obstacle_y_down_vga),
         .rgb(vga_data_out)
     );
 

@@ -4,8 +4,10 @@ module game_logic(
     input wire rst_n,
     input wire clk, // 60Hz frame clock
     input [2:0] sw,
-    input logic [9:0] [19:0] obstacle_x,
-    input logic [9:0] [17:0] obstacle_y,
+    input logic [9:0] [9:0] obstacle_x_left,
+    input logic [9:0] [9:0] obstacle_x_right,
+    input logic [9:0] [8:0] obstacle_y_up,
+    input logic [9:0] [8:0] obstacle_y_down,
     output reg [1:0] gamemode, // Changed to reg type for assignment in always block
     output reg [8:0] player_y
 );
@@ -80,10 +82,10 @@ module game_logic(
             if (gamemode == 2'b01) begin
                 crash <= 2'b00; // Assume no collision at start
                 for (integer k = 0; k < 10; k = k + 1) begin
-                    logic [9:0] obs_x_left   = obstacle_x[k][19:10];
-                    logic [9:0] obs_x_right  = obstacle_x[k][9:0];
-                    logic [8:0] obs_y_top    = obstacle_y[k][17:9];
-                    logic [8:0] obs_y_bottom = obstacle_y[k][8:0];
+                    logic [9:0] obs_x_left   = obstacle_x_left[k];
+                    logic [9:0] obs_x_right  = obstacle_x_right[k];
+                    logic [8:0] obs_y_top    = obstacle_y_up[k];
+                    logic [8:0] obs_y_bottom = obstacle_y_down[k];
 
                     // AABB collision detection algorithm
                     if ( (PLAYER_X_RIGHT > obs_x_left) &&
