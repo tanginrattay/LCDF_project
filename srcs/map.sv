@@ -11,11 +11,11 @@ module map(
     input wire rst_n,
     input wire clk, // Input clock (60Hz frame clock)
     input wire [1:0] gamemode,
+    output wire [:0] score,
     output logic [9:0] [9:0] obstacle_x_left,
     output logic [9:0] [9:0] obstacle_x_right,
     output logic [9:0] [8:0] obstacle_y_up,
-    output logic [9:0] [8:0] obstacle_y_down,
-    output logic [13:0] score // 新增：输出分数，0~9999
+    output logic [9:0] [8:0] obstacle_y_down
 );
 
 //================================================================
