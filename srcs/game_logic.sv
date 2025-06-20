@@ -1,3 +1,5 @@
+// File: game_logic.sv
+
 module game_logic(
     input wire rst_n,
     input wire clk, // 60Hz frame clock
