@@ -6,7 +6,7 @@ pixels = img.load()
 
 with open("screen_pixels.txt") as f:
     for line in f:
-        row, col, r, g, b = line.strip().split()
+        row, col, b, g, r = line.strip().split()
         row = int(row)
         col = int(col)
         # 4位转8位
@@ -17,4 +17,7 @@ with open("screen_pixels.txt") as f:
             pixels[col, row] = (r, g, b)
 
 img.save("screen_pixels.png")
-print("图片已保存为 screen_output.png")
+
+img.show()
+
+print("图片已保存为 screen_pixels.png")
