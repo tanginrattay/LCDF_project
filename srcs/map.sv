@@ -1,10 +1,11 @@
 // File: map.sv
-// Description: 强化随机性的障碍物生成模块 - 增强上下边界概率版本
+// Description: 强化随机性的障碍物生成模块 - 修复障碍物删除问题
 // 核心改进：
 // 1. 使用真随机种子和多级扰动
 // 2. 强制Y轴全覆盖算法，特别保证上下边界被覆盖
 // 3. 动态调整生成策略防止安全区域
 // 4. 新增：增强上下边界生成概率（约40%概率生成在边界区域）
+// 5. 修复：障碍物删除逻辑，防止下溢导致的周期性问题
 
 module map(
     input wire rst_n,
@@ -42,16 +43,20 @@ localparam BOUNDARY_PREFERENCE_THRESHOLD = 8'd102;  // 40% 概率选择边界 (1
 localparam UPPER_BOUNDARY_ZONE_SIZE = 60;           // 上边界区域大小
 localparam LOWER_BOUNDARY_ZONE_SIZE = 60;           // 下边界区域大小
 
+// 修复：删除边界参数 - 障碍物完全离开屏幕的安全边界
+localparam DELETE_BOUNDARY = -100;  // 删除边界，确保障碍物完全离开屏幕
+
 //================================================================
 // Internal Signal Definitions
 //================================================================
 reg [NUM_OBSTACLES-1:0] active;
-reg [10:0] pos_x [0:NUM_OBSTACLES-1];
+// 修复：使用有符号数据类型防止下溢
+reg signed [11:0] pos_x [0:NUM_OBSTACLES-1];  // 12位有符号数，范围-2048到2047
 reg [8:0]  pos_y [0:NUM_OBSTACLES-1];
 reg [6:0]  width [0:NUM_OBSTACLES-1];
 reg [7:0]  height [0:NUM_OBSTACLES-1];
 
-reg [10:0] next_spawn_x;
+reg signed [11:0] next_spawn_x;  // 修复：也改为有符号数
 reg [1:0] gamemode_prev;
 
 // Registered outputs
@@ -311,9 +316,9 @@ always_ff @(posedge clk or negedge rst_n) begin
 
             next_spawn_x <= next_spawn_x - SCROLL_SPEED;
 
-            // 删除屏幕外的障碍物
+            // 修复：删除屏幕外的障碍物 - 使用有符号比较
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
-                if (active[i] && (pos_x[i] + width[i] < 0)) begin
+                if (active[i] && (pos_x[i] + $signed({5'b0, width[i]}) < DELETE_BOUNDARY)) begin
                     active[i] <= 1'b0;
                 end
             end
@@ -398,9 +403,10 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
     end else begin
         for (integer k = 0; k < NUM_OBSTACLES; k++) begin
+            // 修复：输出逻辑也需要处理有符号数
             if (active[k] && pos_x[k] >= 0 && pos_x[k] < SCREEN_WIDTH) begin
                 obstacle_x_left_reg[k]  <= 10'(pos_x[k]);
-                obstacle_x_right_reg[k] <= 10'(pos_x[k] + width[k]);
+                obstacle_x_right_reg[k] <= 10'(pos_x[k] + $signed({5'b0, width[k]}));
                 obstacle_y_up_reg[k]    <= pos_y[k];
                 obstacle_y_down_reg[k]  <= 9'(pos_y[k] + height[k]);
             end else begin
