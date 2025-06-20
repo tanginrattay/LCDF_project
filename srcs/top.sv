@@ -60,17 +60,20 @@ module top(
     // --- 关键修复：时钟域同步器 ---
     // 将游戏逻辑数据同步到VGA时钟域，避免锯齿问题
     always_ff @(posedge clk_25mhz or negedge rst_n_debounced) begin
-        if (!rst_n_debounced) begin
-            for (integer i = 0; i < 10; i++) begin
-                obstacle_x_left_vga[i] <= 10'd700;
-                obstacle_x_right_vga[i] <= 10'd700;
-                obstacle_y_up_vga[i] <= 9'd500;
-                obstacle_y_down_vga[i] <= 9'd500;
-            end
-            player_y_vga <= 9'd240;
-            gamemode_vga <= 2'b00;
-        end else begin
-            // Synchronize all display data to VGA clock domain
+    if (!rst_n_debounced) begin
+        // 复位时初始化
+        for (integer i = 0; i < 10; i++) begin
+            obstacle_x_left_vga[i] <= 10'd700;
+            obstacle_x_right_vga[i] <= 10'd700;
+            obstacle_y_up_vga[i] <= 9'd500;
+            obstacle_y_down_vga[i] <= 9'd500;
+        end
+        player_y_vga <= 9'd240;
+        gamemode_vga <= 2'b00;
+    end else begin
+        // 在垂直同步信号（VS）有效时（通常是VS的上升沿或在VBI期间）更新显示数据
+        // 这样可以确保VGA在绘制下一帧时使用一套完整且稳定的数据
+        if (!VS) begin // 或者在VS的某个特定相位
             obstacle_x_left_vga <= obstacle_x_game_left;
             obstacle_x_right_vga <= obstacle_x_game_right;
             obstacle_y_up_vga <= obstacle_y_game_up;
@@ -78,7 +81,9 @@ module top(
             player_y_vga <= player_y;
             gamemode_vga <= gamemode;
         end
+        // 否则，保持当前帧的数据不变
     end
+end
 
     // --- Game Logic Module ---
     game_logic u_game_logic (
@@ -111,10 +116,10 @@ module top(
         .clk(clk),
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
-        .obstacle_x_left(obstacle_x_left_vga),
-        .obstacle_x_right(obstacle_x_right_vga),
-        .obstacle_y_up(obstacle_y_up_vga),
-        .obstacle_y_down(obstacle_y_down_vga),
+        .obstacle_x_game_left(obstacle_x_left_vga),
+        .obstacle_x_game_right(obstacle_x_right_vga),
+        .obstacle_y_game_up(obstacle_y_up_vga),
+        .obstacle_y_game_down(obstacle_y_down_vga),
         .rgb(vga_data_out)
     );
 
