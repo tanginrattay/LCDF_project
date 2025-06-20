@@ -108,7 +108,7 @@ module top(
     vga_screen_pic u_vga_screen_pic(
         .pix_x(pix_x),
         .pix_y(pix_y),
-        .clk(clk)
+        .clk(clk),
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
         .obstacle_x_left(obstacle_x_left_vga),
@@ -135,33 +135,4 @@ module top(
     // --- Other Peripherals ---
     assign gamemode_led = gamemode;
 
-endmodule
-
-//================================================================
-// 改进的时钟分频器 - 更精确的60Hz生成
-//================================================================
-module clkdiv_60hz_improved(
-    input wire clk,        // 100MHz input clock
-    input wire rst_n,      // Active-low reset signal
-    output reg clk_60hz    // Exactly 60Hz output clock
-);
-    // 更精确的计算：100MHz / 60Hz = 1,666,667 cycles
-    // 使用除法器生成更准确的60Hz
-    parameter COUNTER_MAX = 1666667 - 1;
-    
-    reg [20:0] counter;  // 21位计数器足够容纳1,666,667
-    
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            counter <= 21'd0;
-            clk_60hz <= 1'b0;
-        end else begin
-            if (counter == COUNTER_MAX) begin
-                counter <= 21'd0;
-                clk_60hz <= ~clk_60hz;
-            end else begin
-                counter <= counter + 1;
-            end
-        end
-    end
 endmodule
