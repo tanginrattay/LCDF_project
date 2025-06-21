@@ -24,7 +24,7 @@ module top(
     
     wire score_rst; // Reset signal for score display
     
-    wire [3:0] score;
+    wire [13:0] score;
     wire [3:0] bcd3, bcd2, bcd1, bcd0; // BCD outputs for score displayB
    
 

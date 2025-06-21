@@ -11,7 +11,7 @@ module map(
     input wire rst_n,
     input wire clk, // Input clock (60Hz frame clock)
     input wire [1:0] gamemode,
-    output wire [:0] score,
+    output wire [13:0] score,
     output logic [9:0] [9:0] obstacle_x_left,
     output logic [9:0] [9:0] obstacle_x_right,
     output logic [9:0] [8:0] obstacle_y_up,
@@ -272,6 +272,9 @@ endfunction
 //================================================================
 // 主状态机和障碍物逻辑
 //================================================================
+// 消失的障碍物的数量
+integer disappear_count;
+
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         next_spawn_x <= SCREEN_WIDTH + MIN_GAP_DIFFICULTY;
@@ -323,8 +326,6 @@ always_ff @(posedge clk or negedge rst_n) begin
 
             next_spawn_x <= next_spawn_x - SCROLL_SPEED;
 
-            // 新增：统计本周期消失的障碍物数量
-            integer disappear_count;
             disappear_count = 0;
 
             // 修复：删除屏幕外的障碍物 - 使用有符号比较
