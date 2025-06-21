@@ -14,7 +14,8 @@ module map(
     output logic [9:0] [9:0] obstacle_x_left,
     output logic [9:0] [9:0] obstacle_x_right,
     output logic [9:0] [8:0] obstacle_y_up,
-    output logic [9:0] [8:0] obstacle_y_down
+    output logic [9:0] [8:0] obstacle_y_down,
+    output logic [13:0] score // 新增：输出分数，0~9999
 );
 
 //================================================================
@@ -64,6 +65,9 @@ reg [9:0] [9:0] obstacle_x_left_reg;
 reg [9:0] [9:0] obstacle_x_right_reg;
 reg [9:0] [8:0] obstacle_y_up_reg;
 reg [9:0] [8:0] obstacle_y_down_reg;
+
+// 新增：score寄存器
+reg [13:0] score_reg; // 14位可表示0~16383，足够0~9999
 
 //================================================================
 // 高强度随机数生成系统
@@ -274,6 +278,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         gamemode_prev <= 2'b00;
         boundary_generation_count <= 8'b0;
         total_generation_count <= 8'b0;
+        score_reg <= 14'd0; // 新增：分数清零
         for (integer i = 0; i < NUM_OBSTACLES; i++) begin
             active[i] <= 1'b0;
             pos_x[i] <= SCREEN_WIDTH + 100;
@@ -294,6 +299,7 @@ always_ff @(posedge clk or negedge rst_n) begin
             force_coverage_map <= 8'b0;
             boundary_generation_count <= 8'b0;
             total_generation_count <= 8'b0;
+            score_reg <= 14'd0; // 新增：分数清零
         end
         else if (gamemode == 2'b01) begin
             if (gamemode_prev == 2'b00) begin
@@ -305,6 +311,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 force_coverage_map <= 8'b0;
                 boundary_generation_count <= 8'b0;
                 total_generation_count <= 8'b0;
+                score_reg <= 14'd0; // 新增：分数清零
             end
 
             // 移动所有活跃的障碍物
@@ -316,12 +323,23 @@ always_ff @(posedge clk or negedge rst_n) begin
 
             next_spawn_x <= next_spawn_x - SCROLL_SPEED;
 
+            // 新增：统计本周期消失的障碍物数量
+            integer disappear_count;
+            disappear_count = 0;
+
             // 修复：删除屏幕外的障碍物 - 使用有符号比较
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
                 if (active[i] && (pos_x[i] + $signed({5'b0, width[i]}) < DELETE_BOUNDARY)) begin
                     active[i] <= 1'b0;
+                    disappear_count = disappear_count + 1; // 新增：计数
                 end
             end
+
+            // 新增：score累加，最大9999
+            if (score_reg + disappear_count > 14'd9999)
+                score_reg <= 14'd9999;
+            else
+                score_reg <= score_reg + disappear_count;
 
             // 生成新障碍物
             if (next_spawn_x <= SCREEN_WIDTH) begin
@@ -423,5 +441,8 @@ assign obstacle_x_left  = obstacle_x_left_reg;
 assign obstacle_x_right = obstacle_x_right_reg;
 assign obstacle_y_up    = obstacle_y_up_reg;
 assign obstacle_y_down  = obstacle_y_down_reg;
+
+// 新增：输出分数
+assign score = score_reg;
 
 endmodule
