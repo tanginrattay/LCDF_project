@@ -42,9 +42,9 @@ module vga_screen_pic(
               SCREEN_W_PIC = 10'd640, // VGA 宽度 (VGA width)
               PLAYER_PIC = 10'd40; // Player image size
     //HEART参量
-    parameter HEART_SIZE = 10'd16, // Heart图片的宽度
+    parameter HEART_SIZE = 10'd18, // Heart图片的宽度
               // 第一张图片的位置                      
-              HEART_Y = 10'd463,
+              HEART_Y = 10'd460,
               HEART_X = 10'd0,
               MAX_HEART = 5; // 最大心形数量
 
@@ -56,7 +56,7 @@ module vga_screen_pic(
     reg [15:0] pic_romaddrOver; // 小图片gameover的ROM地址 (Game Over ROM address)
     reg [10:0] pic_romaddrPlayer; // Player的ROM地址 (Player ROM address)
     reg [18:0] pic_romaddrBackground;    
-    reg [7:0] pic_romaddrHeart;
+    reg [9:0] pic_romaddrHeart;
 
     // Trail effect variables (拖尾效果变量)
     reg [3:0] trail_alpha; // Current trail alpha value
@@ -86,7 +86,7 @@ module vga_screen_pic(
         .addra(pic_romaddrBackground),  // input wire [18 : 0] addra
         .douta(background_data)  // output wire [11 : 0] douta
     );
-    heart heart_rom (
+    Heart heart_rom (
         .clka(clk),
         .addra(pic_romaddrHeart),
         .douta(heart_data)
@@ -102,6 +102,7 @@ module vga_screen_pic(
         pic_romaddrOver = (pix_x >= GAMEOVER_X && pix_x < GAMEOVER_X + H_PIC &&
                            pix_y >= GAMEOVER_Y && pix_y < GAMEOVER_Y + H_PIC) ?
                           (pix_x - GAMEOVER_X) + (pix_y - GAMEOVER_Y) * H_PIC : 0; // Default to 0 if out of bounds
+        pic_romaddrHeart = 0;
         for (int h = 0; h < MAX_HEART; h++) begin
             if (pix_y >= HEART_Y && pix_y < HEART_Y + HEART_SIZE && 
                 pix_x >= HEART_X + h*HEART_SIZE && pix_x < HEART_X + (h+1)*HEART_SIZE && h < heart) begin
@@ -150,7 +151,7 @@ module vga_screen_pic(
     //确定当前像素的状态
     //0: Border (边界)
     //1: Obstacle (障碍物)
-    //2: Player (玩家)
+    //TODO2:史蒂夫
     //3: Game Over image (游戏结束图片)
     //4: Game Over background (游戏结束背景)
     //5: In-game background (游戏内背景)
@@ -158,6 +159,11 @@ module vga_screen_pic(
     //7: Paused screen (暂停画面)
     //8: Trail particle (拖尾粒子) - New state
     //9: Heart (心形图标)
+    //TODO
+    //10: 障碍物-小黑
+    //11: 障碍物-小白
+    //12: 障碍物-苦力怕
+    //13: 障碍物-僵尸
 //判断像素状态
     always_comb begin
         pixel_state = 4'd0; // Default to background (默认为背景)
