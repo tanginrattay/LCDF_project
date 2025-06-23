@@ -1,6 +1,6 @@
 // File: top.sv
-// Description: Top-level module with clock domain synchronization fix
-//              添加双缓冲机制解决VGA显示锯齿问题
+// Description: Top-level module with clock domain synchronization fix and trail effect
+//              添加双缓冲机制解决VGA显示锯齿问题，并支持拖尾效果
 
 module top(
     input wire clk,         // Main input clock (e.g., 100MHz)
@@ -11,7 +11,9 @@ module top(
     output wire [3:0] B,    // VGA Blue output
     output wire HS,         // VGA Horizontal Sync
     output wire VS,         // VGA Vertical Sync
-//  output wire beep,
+//    output wire beep,
+    output wire [3:0] AN,
+    output wire [7:0] SEGMENT,
     output wire [1:0] gamemode_led
 );
 
@@ -20,8 +22,18 @@ module top(
     wire clk_25mhz;       // 25MHz clock for VGA pixel timing
     wire clk_60hz;        // 60Hz clock for game logic timing
     
+    wire score_rst; // Reset signal for score display
+    
+    wire [13:0] score;
+    wire [3:0] bcd3, bcd2, bcd1, bcd0; // BCD outputs for score display
+
     wire [1:0] gamemode;
     wire [8:0] player_y;
+    
+    // Trail effect signals from game logic
+    wire [40:0] [9:0] trail_x_game;
+    wire [40:0] [8:0] trail_y_game;
+    wire [40:0] [3:0] trail_life_game;
     
     // 游戏逻辑时钟域的障碍物数据
     logic [9:0] [9:0] obstacle_x_game_left;
@@ -36,6 +48,11 @@ module top(
     logic [9:0] [8:0] obstacle_y_down_vga;
     logic [8:0] player_y_vga;
     logic [1:0] gamemode_vga;
+    
+    // VGA时钟域的拖尾数据（双缓冲）
+    logic [40:0] [9:0] trail_x_vga;
+    logic [40:0] [8:0] trail_y_vga;
+    logic [40:0] [3:0] trail_life_vga;
     
     // VGA signals
     wire [9:0] pix_x;
@@ -57,35 +74,48 @@ module top(
     // Generate 60Hz clock for game logic
     clkdiv_60hz u_clkdiv_60hz(.clk(clk), .rst_n(rst_n_debounced), .clk_60hz(clk_60hz));
 
-    // --- 关键修复：时钟域同步器 ---
+    // --- 关键修复：时钟域同步器（增加拖尾数据同步）---
     // 将游戏逻辑数据同步到VGA时钟域，避免锯齿问题
     always_ff @(posedge clk_25mhz or negedge rst_n_debounced) begin
-    if (!rst_n_debounced) begin
-        // 复位时初始化
-        for (integer i = 0; i < 10; i++) begin
-            obstacle_x_left_vga[i] <= 10'd700;
-            obstacle_x_right_vga[i] <= 10'd700;
-            obstacle_y_up_vga[i] <= 9'd500;
-            obstacle_y_down_vga[i] <= 9'd500;
+        if (!rst_n_debounced) begin
+            // 复位时初始化障碍物数据
+            for (integer i = 0; i < 10; i++) begin
+                obstacle_x_left_vga[i] <= 10'd700;
+                obstacle_x_right_vga[i] <= 10'd700;
+                obstacle_y_up_vga[i] <= 9'd500;
+                obstacle_y_down_vga[i] <= 9'd500;
+            end
+            player_y_vga <= 9'd240;
+            gamemode_vga <= 2'b00;
+            
+            // 复位时初始化拖尾数据
+            for (integer i = 0; i < 41; i++) begin
+                trail_x_vga[i] <= 10'd0;
+                trail_y_vga[i] <= 9'd0;
+                trail_life_vga[i] <= 4'd0;
+            end
+        end else begin
+            // 在垂直同步信号（VS）有效时更新显示数据
+            // 这样可以确保VGA在绘制下一帧时使用一套完整且稳定的数据
+            if (!VS) begin // 在垂直消隐期间更新数据
+                // 同步障碍物和玩家数据
+                obstacle_x_left_vga <= obstacle_x_game_left;
+                obstacle_x_right_vga <= obstacle_x_game_right;
+                obstacle_y_up_vga <= obstacle_y_game_up;
+                obstacle_y_down_vga <= obstacle_y_game_down;
+                player_y_vga <= player_y;
+                gamemode_vga <= gamemode;
+                
+                // 同步拖尾数据
+                trail_x_vga <= trail_x_game;
+                trail_y_vga <= trail_y_game;
+                trail_life_vga <= trail_life_game;
+            end
+            // 否则，保持当前帧的数据不变
         end
-        player_y_vga <= 9'd240;
-        gamemode_vga <= 2'b00;
-    end else begin
-        // 在垂直同步信号（VS）有效时（通常是VS的上升沿或在VBI期间）更新显示数据
-        // 这样可以确保VGA在绘制下一帧时使用一套完整且稳定的数据
-        if (!VS) begin // 或者在VS的某个特定相位
-            obstacle_x_left_vga <= obstacle_x_game_left;
-            obstacle_x_right_vga <= obstacle_x_game_right;
-            obstacle_y_up_vga <= obstacle_y_game_up;
-            obstacle_y_down_vga <= obstacle_y_game_down;
-            player_y_vga <= player_y;
-            gamemode_vga <= gamemode;
-        end
-        // 否则，保持当前帧的数据不变
     end
-end
 
-    // --- Game Logic Module ---
+    // --- Game Logic Module (Enhanced with Trail Effect) ---
     game_logic u_game_logic (
         .rst_n(rst_n_debounced),
         .sw(sw),
@@ -95,7 +125,11 @@ end
         .obstacle_y_up(obstacle_y_game_up),
         .obstacle_y_down(obstacle_y_game_down),
         .gamemode(gamemode),
-        .player_y(player_y)
+        .player_y(player_y),
+        // Trail effect outputs
+        .trail_x(trail_x_game),
+        .trail_y(trail_y_game),
+        .trail_life(trail_life_game)
     );
 
     // --- Map Generation Module ---
@@ -103,13 +137,14 @@ end
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
+        .score(score),
         .obstacle_x_left(obstacle_x_game_left),
         .obstacle_x_right(obstacle_x_game_right),
         .obstacle_y_up(obstacle_y_game_up),
         .obstacle_y_down(obstacle_y_game_down)
     );
 
-    // --- VGA Screen Picture Generator ---
+    // --- VGA Screen Picture Generator (Enhanced with Trail Effect) ---
     vga_screen_pic u_vga_screen_pic(
         .pix_x(pix_x),
         .pix_y(pix_y),
@@ -121,6 +156,10 @@ end
         .obstacle_x_game_right(obstacle_x_right_vga),
         .obstacle_y_game_up(obstacle_y_up_vga),
         .obstacle_y_game_down(obstacle_y_down_vga),
+        // Trail effect inputs
+        .trail_x(trail_x_vga),
+        .trail_y(trail_y_vga),
+        .trail_life(trail_life_vga),
         .rgb(vga_data_out)
     );
 
@@ -139,6 +178,24 @@ end
     );
     
     // --- Other Peripherals ---
-    assign gamemode_led = gamemode;
+    assign gamemode_led = score[1:0];
+
+    assign score_rst = (gamemode == 2'b00); // Reset score when in initial state
+    BinToBCD bcd_instance (
+        .bin(score),
+        .bcd3(bcd3),
+        .bcd2(bcd2),
+        .bcd1(bcd1),
+        .bcd0(bcd0)
+    );
+    DisplayNumber d1(.clk(clk), .RST(score_rst), .Hexs({bcd3, bcd2, bcd1, bcd0}), 
+                    .Points(4'b0000), .LES(4'b0000), .Segment(SEGMENT), .AN(AN));
+
+//    top_beep u_top_beep(
+//        .clk(clk),
+//        .gamemode(gamemode),
+//        .sw(sw[0]),
+//        .beep(beep)
+//    );
 
 endmodule

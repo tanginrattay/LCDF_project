@@ -1,21 +1,21 @@
 // File: map.sv
-// Description: 强化随机性的障碍物生成模块 - 修复障碍物删除问题
-// 核心改进：
-// 1. 使用真随机种子和多级扰动
-// 2. 强制Y轴全覆盖算法，特别保证上下边界被覆盖
-// 3. 动态调整生成策略防止安全区域
-// 4. 新增：增强上下边界生成概率（约40%概率生成在边界区域）
-// 5. 修复：障碍物删除逻辑，防止下溢导致的周期性问题
+// Description: Enhanced obstacle map module - improved obstacle removal logic
+// Main improvements:
+// 1. Uses enhanced random number and difficulty zones
+// 2. Enforces Y-axis full coverage algorithm, especially for boundary obstacles
+// 3. Dynamic boundary bias to prevent full coverage in the middle
+// 4. Tracks boundary obstacle generation ratio, about 40% obstacles are at boundaries
+// 5. Improved obstacle removal logic to prevent missing obstacles
 
 module map(
     input wire rst_n,
     input wire clk, // Input clock (60Hz frame clock)
     input wire [1:0] gamemode,
+    output wire [13:0] score,
     output logic [9:0] [9:0] obstacle_x_left,
     output logic [9:0] [9:0] obstacle_x_right,
     output logic [9:0] [8:0] obstacle_y_up,
-    output logic [9:0] [8:0] obstacle_y_down,
-    output logic [13:0] score // 新增：输出分数，0~9999
+    output logic [9:0] [8:0] obstacle_y_down
 );
 
 //================================================================
@@ -39,25 +39,25 @@ localparam MAX_GAP_DIFFICULTY = 180;
 
 localparam PLAYER_SIZE_Y      = 40;
 
-// 新增：边界偏好参数
-localparam BOUNDARY_PREFERENCE_THRESHOLD = 8'd102;  // 40% 概率选择边界 (102/255 ≈ 40%)
-localparam UPPER_BOUNDARY_ZONE_SIZE = 60;           // 上边界区域大小
-localparam LOWER_BOUNDARY_ZONE_SIZE = 60;           // 下边界区域大小
+// Boundary bias parameters
+localparam BOUNDARY_PREFERENCE_THRESHOLD = 8'd102;  // 40% probability to select boundary (102/255 ≈ 40%)
+localparam UPPER_BOUNDARY_ZONE_SIZE = 60;           // Upper boundary zone size
+localparam LOWER_BOUNDARY_ZONE_SIZE = 60;           // Lower boundary zone size
 
-// 修复：删除边界参数 - 障碍物完全离开屏幕的安全边界
-localparam DELETE_BOUNDARY = -100;  // 删除边界，确保障碍物完全离开屏幕
+// Obstacle removal boundary - ensures obstacle is fully off screen before removal
+localparam DELETE_BOUNDARY = -100;  // Removal boundary, ensures obstacle is fully off screen
 
 //================================================================
 // Internal Signal Definitions
 //================================================================
 reg [NUM_OBSTACLES-1:0] active;
-// 修复：使用有符号数据类型防止下溢
-reg signed [11:0] pos_x [0:NUM_OBSTACLES-1];  // 12位有符号数，范围-2048到2047
+// Use signed X position to prevent overflow
+reg signed [11:0] pos_x [0:NUM_OBSTACLES-1];  // 12-bit signed X position, range -2048 to 2047
 reg [8:0]  pos_y [0:NUM_OBSTACLES-1];
 reg [6:0]  width [0:NUM_OBSTACLES-1];
 reg [7:0]  height [0:NUM_OBSTACLES-1];
 
-reg signed [11:0] next_spawn_x;  // 修复：也改为有符号数
+reg signed [11:0] next_spawn_x;  // Next spawn X position
 reg [1:0] gamemode_prev;
 
 // Registered outputs
@@ -66,33 +66,33 @@ reg [9:0] [9:0] obstacle_x_right_reg;
 reg [9:0] [8:0] obstacle_y_up_reg;
 reg [9:0] [8:0] obstacle_y_down_reg;
 
-// 新增：score寄存器
-reg [13:0] score_reg; // 14位可表示0~16383，足够0~9999
+// Score register
+reg [13:0] score_reg; // 14 bits, enough for 0~9999
 
 //================================================================
-// 高强度随机数生成系统
+// Enhanced random system
 //================================================================
 
-// 多个独立的随机数生成器
+// Random number generators
 reg [31:0] rng1, rng2, rng3;
 reg [23:0] rng4;
-reg [15:0] chaos_counter;      // 混沌计数器
-reg [31:0] feedback_shift;     // 反馈移位寄存器
-reg [7:0]  noise_accumulator;  // 噪声累积器
+reg [15:0] chaos_counter;      // Chaos counter
+reg [31:0] feedback_shift;     // Feedback shift register
+reg [7:0]  noise_accumulator;  // Noise accumulator
 
-// 强制覆盖控制器
-reg [4:0] coverage_counter;    // 覆盖计数器 (0-31)
-reg [7:0] force_coverage_map;  // 强制覆盖映射表
-reg [2:0] last_zone;          // 记录上次生成的区域
+// Forced coverage mechanism
+reg [4:0] coverage_counter;    // Coverage counter (0-31)
+reg [7:0] force_coverage_map;  // Forced coverage map
+reg [2:0] last_zone;           // Last generated zone
 
-// 新增：边界生成统计
-reg [7:0] boundary_generation_count;  // 边界生成计数
-reg [7:0] total_generation_count;     // 总生成计数
+// Boundary generation statistics
+reg [7:0] boundary_generation_count;  // Boundary obstacle generation count
+reg [7:0] total_generation_count;     // Total obstacle generation count
 
-// 初始化和更新所有随机数生成器
+// Initialization and random update logic
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        // 使用不同的初始种子
+        // Use different initial values
         rng1 <= 32'h12345678;
         rng2 <= 32'h9ABCDEF0;
         rng3 <= 32'hFEDCBA98;
@@ -106,37 +106,37 @@ always_ff @(posedge clk or negedge rst_n) begin
         boundary_generation_count <= 8'b0;
         total_generation_count <= 8'b0;
     end else begin
-        // 更新多个LFSR，使用不同的反馈多项式
+        // Update LFSRs with different feedback polynomials
         rng1 <= {rng1[30:0], rng1[31] ^ rng1[21] ^ rng1[1] ^ rng1[0]};
         rng2 <= {rng2[30:0], rng2[31] ^ rng2[27] ^ rng2[5] ^ rng2[3]};
         rng3 <= {rng3[30:0], rng3[31] ^ rng3[25] ^ rng3[7] ^ rng3[2]};
         rng4 <= {rng4[22:0], rng4[23] ^ rng4[18] ^ rng4[12] ^ rng4[6]};
         
-        // 混沌计数器 - 非线性更新
+        // Update chaos counter - can be adjusted
         chaos_counter <= chaos_counter + ((rng1[7:0] & 8'h0F) | 8'h01);
         
-        // 反馈移位寄存器 - 基于多个源的反馈
+        // Update feedback shift register - for extra randomness
         feedback_shift <= {feedback_shift[30:0], 
                           (rng1[15] ^ rng2[7] ^ rng3[23] ^ rng4[11] ^ chaos_counter[3])};
         
-        // 噪声累积器 - 累积所有变化
+        // Update noise accumulator - accumulates changes
         noise_accumulator <= noise_accumulator + rng1[7:0] + rng2[15:8] + 
                            rng3[23:16] + rng4[7:0] + chaos_counter[7:0];
         
-        // 更新覆盖控制器
+        // Update coverage counter
         coverage_counter <= coverage_counter + 1;
     end
 end
 
 //================================================================
-// 超强随机数生成函数
+// Enhanced random helper functions
 //================================================================
 
-// 生成最终的随机数 - 混合所有源
+// Get chaos random - main random source
 function automatic [31:0] get_chaos_random;
     input [4:0] counter;
     begin
-        // 多层混合，包含时间、位置、历史信息
+        // Mix time, position, history, etc.
         get_chaos_random = rng1 ^ rng2 ^ rng3 ^ {rng4, rng4[7:0]} ^ 
                           feedback_shift ^ {noise_accumulator, noise_accumulator, 
                           noise_accumulator, noise_accumulator} ^
@@ -146,7 +146,7 @@ function automatic [31:0] get_chaos_random;
     end
 endfunction
 
-// 增强上下边界概率的Y轴生成算法
+// Enhanced boundary Y calculation algorithm
 function automatic [8:0] get_enhanced_boundary_y;
     input [31:0] chaos_rng;
     input [7:0] obstacle_height;
@@ -171,26 +171,26 @@ function automatic [8:0] get_enhanced_boundary_y;
         if (max_y_pos <= UPPER_BOUND) begin
             get_enhanced_boundary_y = UPPER_BOUND;
         end else begin
-            // 计算当前边界生成比例
+            // Calculate current boundary generation ratio
             if (total_count > 0) begin
                 boundary_ratio = (boundary_count * 8'd100) / total_count;
             end else begin
                 boundary_ratio = 8'd0;
             end
             
-            // 动态调整边界偏好 - 如果边界生成不足，增加偏好
-            if (boundary_ratio < 8'd35) begin // 如果边界比例小于35%
-                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD + 8'd51; // 增加到60%概率
-            end else if (boundary_ratio > 8'd50) begin // 如果边界比例大于50%
-                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD - 8'd25; // 降低到30%概率
+            // Dynamic boundary bias - if boundary ratio is low, increase bias
+            if (boundary_ratio < 8'd35) begin // If boundary ratio < 35%
+                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD + 8'd51; // Increase to ~60%
+            end else if (boundary_ratio > 8'd50) begin // If boundary ratio > 50%
+                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD - 8'd25; // Decrease to ~30%
             end else begin
-                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD; // 保持40%概率
+                boundary_preference = BOUNDARY_PREFERENCE_THRESHOLD; // Default 40%
             end
             
-            // 决定是否使用边界生成
+            // Decide whether to use boundary generation
             use_boundary_generation = (chaos_rng[7:0] < boundary_preference);
             
-            // 强制边界覆盖检查
+            // Force boundary coverage if needed
             if (counter[3:0] == 4'b1111) begin
                 if (!coverage_map[0] || !coverage_map[7]) begin
                     use_boundary_generation = 1'b1;
@@ -198,11 +198,11 @@ function automatic [8:0] get_enhanced_boundary_y;
             end
             
             if (use_boundary_generation) begin
-                // 边界生成模式
-                use_upper_boundary = chaos_rng[8]; // 50%概率选择上边界或下边界
+                // Boundary mode
+                use_upper_boundary = chaos_rng[8]; // 50% chance for upper or lower boundary
                 
                 if (use_upper_boundary) begin
-                    // 上边界区域生成 (UPPER_BOUND 到 UPPER_BOUND + UPPER_BOUNDARY_ZONE_SIZE)
+                    // Upper boundary area (UPPER_BOUND to UPPER_BOUND + UPPER_BOUNDARY_ZONE_SIZE)
                     if (UPPER_BOUND + UPPER_BOUNDARY_ZONE_SIZE <= max_y_pos) begin
                         boundary_offset = (chaos_rng[23:16] ^ noise_accumulator) % UPPER_BOUNDARY_ZONE_SIZE;
                         result_y = UPPER_BOUND + boundary_offset;
@@ -210,7 +210,7 @@ function automatic [8:0] get_enhanced_boundary_y;
                         result_y = UPPER_BOUND;
                     end
                 end else begin
-                    // 下边界区域生成 (max_y_pos - LOWER_BOUNDARY_ZONE_SIZE 到 max_y_pos)
+                    // Lower boundary area (max_y_pos - LOWER_BOUNDARY_ZONE_SIZE to max_y_pos)
                     if (max_y_pos >= LOWER_BOUNDARY_ZONE_SIZE) begin
                         boundary_offset = (chaos_rng[15:8] ^ noise_accumulator) % LOWER_BOUNDARY_ZONE_SIZE;
                         result_y = max_y_pos - boundary_offset;
@@ -220,7 +220,7 @@ function automatic [8:0] get_enhanced_boundary_y;
                     end
                 end
             end else begin
-                // 中间区域生成模式 - 避免过度集中在边界
+                // Middle area mode - not at boundary
                 middle_area_start = UPPER_BOUND + UPPER_BOUNDARY_ZONE_SIZE;
                 middle_area_end = max_y_pos - LOWER_BOUNDARY_ZONE_SIZE;
                 
@@ -229,13 +229,13 @@ function automatic [8:0] get_enhanced_boundary_y;
                                     (middle_area_end - middle_area_start);
                     result_y = middle_area_start + boundary_offset;
                 end else begin
-                    // 如果中间区域太小，使用全范围随机
+                    // If middle area too small, use full range
                     boundary_offset = (chaos_rng[23:16] ^ noise_accumulator) % (max_y_pos - UPPER_BOUND);
                     result_y = UPPER_BOUND + boundary_offset;
                 end
             end
             
-            // 最终边界检查
+            // Clamp to valid range
             if (result_y > max_y_pos) result_y = max_y_pos;
             if (result_y < UPPER_BOUND) result_y = UPPER_BOUND;
             
@@ -244,7 +244,7 @@ function automatic [8:0] get_enhanced_boundary_y;
     end
 endfunction
 
-// 其他随机生成函数保持不变
+// Random width generator
 function automatic [7:0] get_random_width;
     input [31:0] chaos_rng;
     begin
@@ -253,6 +253,7 @@ function automatic [7:0] get_random_width;
     end
 endfunction
 
+// Random height generator
 function automatic [7:0] get_random_height;
     input [31:0] chaos_rng;
     begin
@@ -261,6 +262,7 @@ function automatic [7:0] get_random_height;
     end
 endfunction
 
+// Random gap generator
 function automatic [7:0] get_random_gap;
     input [31:0] chaos_rng;
     begin
@@ -270,15 +272,19 @@ function automatic [7:0] get_random_gap;
 endfunction
 
 //================================================================
-// 主状态机和障碍物逻辑
+// Main state machine and obstacle logic
 //================================================================
+// Disappeared obstacle counter
+reg [3:0] disappear_count;
+
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         next_spawn_x <= SCREEN_WIDTH + MIN_GAP_DIFFICULTY;
         gamemode_prev <= 2'b00;
         boundary_generation_count <= 8'b0;
         total_generation_count <= 8'b0;
-        score_reg <= 14'd0; // 新增：分数清零
+        score_reg <= 14'd0;
+        disappear_count <= 4'd0;  // 初始化计数器
         for (integer i = 0; i < NUM_OBSTACLES; i++) begin
             active[i] <= 1'b0;
             pos_x[i] <= SCREEN_WIDTH + 100;
@@ -290,7 +296,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         gamemode_prev <= gamemode;
 
         if (gamemode == 2'b00) begin
-            // 重置所有状态
+            // Reset state in idle mode
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
                 active[i] <= 1'b0;
                 pos_x[i] <= SCREEN_WIDTH + 100;
@@ -299,7 +305,8 @@ always_ff @(posedge clk or negedge rst_n) begin
             force_coverage_map <= 8'b0;
             boundary_generation_count <= 8'b0;
             total_generation_count <= 8'b0;
-            score_reg <= 14'd0; // 新增：分数清零
+            score_reg <= 14'd0;
+            disappear_count <= 4'd0;
         end
         else if (gamemode == 2'b01) begin
             if (gamemode_prev == 2'b00) begin
@@ -311,10 +318,11 @@ always_ff @(posedge clk or negedge rst_n) begin
                 force_coverage_map <= 8'b0;
                 boundary_generation_count <= 8'b0;
                 total_generation_count <= 8'b0;
-                score_reg <= 14'd0; // 新增：分数清零
+                score_reg <= 14'd0;
+                disappear_count <= 4'd0;
             end
 
-            // 移动所有活跃的障碍物
+            // Move all active obstacles
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
                 if (active[i]) begin
                     pos_x[i] <= pos_x[i] - SCROLL_SPEED;
@@ -323,25 +331,24 @@ always_ff @(posedge clk or negedge rst_n) begin
 
             next_spawn_x <= next_spawn_x - SCROLL_SPEED;
 
-            // 新增：统计本周期消失的障碍物数量
-            integer disappear_count;
-            disappear_count = 0;
+            // 重置消失计数器
+            disappear_count <= 4'd0;
 
-            // 修复：删除屏幕外的障碍物 - 使用有符号比较
+            // Remove obstacles that are off screen and count them
             for (integer i = 0; i < NUM_OBSTACLES; i++) begin
                 if (active[i] && (pos_x[i] + $signed({5'b0, width[i]}) < DELETE_BOUNDARY)) begin
                     active[i] <= 1'b0;
-                    disappear_count = disappear_count + 1; // 新增：计数
+                    disappear_count <= disappear_count + 1'b1;
                 end
             end
 
-            // 新增：score累加，最大9999
+            // Score accumulation in next clock cycle (will be handled by the register update)
             if (score_reg + disappear_count > 14'd9999)
                 score_reg <= 14'd9999;
             else
                 score_reg <= score_reg + disappear_count;
 
-            // 生成新障碍物
+            // Generate new obstacle if needed
             if (next_spawn_x <= SCREEN_WIDTH) begin
                 for (integer i = 0; i < NUM_OBSTACLES; i++) begin
                     if (!active[i]) begin
@@ -352,43 +359,43 @@ always_ff @(posedge clk or negedge rst_n) begin
                         reg [2:0] selected_zone;
                         reg is_boundary_obstacle;
 
-                        // 生成混沌随机数
+                        // Generate random numbers
                         chaos_random = get_chaos_random(coverage_counter);
                         
                         new_width = get_random_width(chaos_random);
                         new_height = get_random_height(chaos_random);
                         
-                        // 使用增强的边界生成算法
+                        // Use enhanced boundary Y algorithm
                         new_y_pos = get_enhanced_boundary_y(chaos_random, new_height, 
                                                           coverage_counter, last_zone, force_coverage_map,
                                                           boundary_generation_count, total_generation_count);
                         gap_size = get_random_gap(chaos_random);
 
-                        // 判断是否为边界障碍物
+                        // Check if this is a boundary obstacle
                         is_boundary_obstacle = (new_y_pos <= (UPPER_BOUND + UPPER_BOUNDARY_ZONE_SIZE)) ||
                                              (new_y_pos >= (LOWER_BOUND - new_height - LOWER_BOUNDARY_ZONE_SIZE));
 
-                        // 更新统计计数
+                        // Update statistics
                         total_generation_count <= total_generation_count + 1;
                         if (is_boundary_obstacle) begin
                             boundary_generation_count <= boundary_generation_count + 1;
                         end
                         
-                        // 防止计数器溢出
+                        // Prevent overflow
                         if (total_generation_count == 8'hFF) begin
                             total_generation_count <= 8'd100;
                             boundary_generation_count <= (boundary_generation_count > 8'd100) ? 
                                                         8'd40 : (boundary_generation_count * 8'd100) / 8'hFF;
                         end
 
-                        // 更新覆盖映射
+                        // Update coverage map
                         selected_zone = ((new_y_pos - UPPER_BOUND) * 8) / (LOWER_BOUND - UPPER_BOUND - new_height);
                         if (selected_zone <= 7) begin
                             force_coverage_map[selected_zone] <= 1'b1;
                         end
                         last_zone <= selected_zone;
 
-                        // 每32个障碍物重置覆盖映射，确保持续覆盖
+                        // Every 32 obstacles, reset coverage map
                         if (coverage_counter == 5'b11111) begin
                             force_coverage_map <= 8'b0;
                         end
@@ -407,9 +414,8 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
     end
 end
-
 //================================================================
-// 输出逻辑
+// Output logic
 //================================================================
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -421,7 +427,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
     end else begin
         for (integer k = 0; k < NUM_OBSTACLES; k++) begin
-            // 修复：输出逻辑也需要处理有符号数
+            // Only output obstacles that are active and within screen
             if (active[k] && pos_x[k] >= 0 && pos_x[k] < SCREEN_WIDTH) begin
                 obstacle_x_left_reg[k]  <= 10'(pos_x[k]);
                 obstacle_x_right_reg[k] <= 10'(pos_x[k] + $signed({5'b0, width[k]}));
@@ -442,7 +448,7 @@ assign obstacle_x_right = obstacle_x_right_reg;
 assign obstacle_y_up    = obstacle_y_up_reg;
 assign obstacle_y_down  = obstacle_y_down_reg;
 
-// 新增：输出分数
+// Output score
 assign score = score_reg;
 
 endmodule

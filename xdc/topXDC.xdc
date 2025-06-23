@@ -23,9 +23,9 @@ set_property -dict {PACKAGE_PIN M22 IOSTANDARD LVCMOS33 SLEW FAST} [get_ports HS
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[0]}]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[1]}]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {btn[2]}]
-set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[0]]
+set_property  IOSTANDARD LVCMOS18 [get_ports gamemode_led[0]]
 set_property  PACKAGE_PIN AF24 [get_ports gamemode_led[0]]
-set_property  IOSTANDARD LVCMOS33 [get_ports gamemode_led[1]]
+set_property  IOSTANDARD LVCMOS18 [get_ports gamemode_led[1]]
 set_property  PACKAGE_PIN AE21 [get_ports gamemode_led[1]]
 
 set_property  IOSTANDARD LVCMOS15 [get_ports {sw[0]}]
@@ -38,3 +38,38 @@ set_property  PACKAGE_PIN AA13 [get_ports {sw[2]}]
 set_property PACKAGE_PIN AF25 [get_ports {beep}]
 set_property IOSTANDARD LVCMOS33 [get_ports {beep}]
 
+set_property PACKAGE_PIN AD21 [get_ports {AN[0]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {AN[0]}]
+
+set_property PACKAGE_PIN AC21 [get_ports {AN[1]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {AN[1]}]
+
+set_property PACKAGE_PIN AB21 [get_ports {AN[2]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {AN[2]}]
+
+set_property PACKAGE_PIN AC22 [get_ports {AN[3]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {AN[3]}]
+
+set_property PACKAGE_PIN AB22 [get_ports {SEGMENT[0]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[0]}]
+
+set_property PACKAGE_PIN AD24 [get_ports {SEGMENT[1]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[1]}]
+
+set_property PACKAGE_PIN AD23 [get_ports {SEGMENT[2]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[2]}]
+
+set_property PACKAGE_PIN Y21 [get_ports {SEGMENT[3]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[3]}]
+
+set_property PACKAGE_PIN W20 [get_ports {SEGMENT[4]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[4]}]
+
+set_property PACKAGE_PIN AC24 [get_ports {SEGMENT[5]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[5]}]
+
+set_property PACKAGE_PIN AC23 [get_ports {SEGMENT[6]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[6]}]
+
+set_property PACKAGE_PIN AA22 [get_ports {SEGMENT[7]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {SEGMENT[7]}]
