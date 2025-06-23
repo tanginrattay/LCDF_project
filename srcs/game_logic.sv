@@ -12,9 +12,9 @@ module game_logic(
     output reg [1:0] gamemode,
     output reg [8:0] player_y,
     // Trail effect outputs
-    output reg [27:0] [9:0] trail_x,
-    output reg [27:0] [8:0] trail_y,
-    output reg [27:0] [3:0] trail_life
+    output reg [40:0] [9:0] trail_x,
+    output reg [40:0] [8:0] trail_y,
+    output reg [40:0] [3:0] trail_life
 );
 
     wire sw_n = ~sw[0]; // Player control switch
@@ -32,7 +32,7 @@ module game_logic(
     parameter ACCELERATION  = 1;
     
     // Trail constants
-    parameter TRAIL_COUNT      = 28;
+    parameter TRAIL_COUNT      = 41;
     parameter TRAIL_SPAWN_X    = PLAYER_X_LEFT - 8;
     parameter TRAIL_HORIZONTAL_SPEED = 4;
     parameter TRAIL_MAX_LIFE_CENTER = 10;

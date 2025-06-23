@@ -9,9 +9,9 @@ module vga_screen_pic(
     input logic [9:0] [8:0] obstacle_y_game_up,
     input logic [9:0] [8:0] obstacle_y_game_down,
     // Trail effect inputs
-    input logic [27:0] [9:0] trail_x,
-    input logic [27:0] [8:0] trail_y,
-    input logic [27:0] [3:0] trail_life,
+    input logic [40:0] [9:0] trail_x,
+    input logic [40:0] [8:0] trail_y,
+    input logic [40:0] [3:0] trail_life,
     output reg [11:0] rgb
 );
     // Game object constants (游戏对象常量)
@@ -91,7 +91,7 @@ module vga_screen_pic(
         trail_idx = 0;
         
         // Check all trail particles to see if current pixel hits any
-        for (integer i = 0; i < 28; i = i + 1) begin
+        for (integer i = 0; i < 41; i = i + 1) begin
             if (trail_life[i] > 0 && 
                 pix_x >= trail_x[i] && pix_x < trail_x[i] + TRAIL_SIZE &&
                 pix_y >= trail_y[i] && pix_y < trail_y[i] + TRAIL_SIZE) begin

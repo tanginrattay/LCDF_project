@@ -31,9 +31,9 @@ module top(
     wire [8:0] player_y;
     
     // Trail effect signals from game logic
-    wire [27:0] [9:0] trail_x_game;
-    wire [27:0] [8:0] trail_y_game;
-    wire [27:0] [3:0] trail_life_game;
+    wire [40:0] [9:0] trail_x_game;
+    wire [40:0] [8:0] trail_y_game;
+    wire [40:0] [3:0] trail_life_game;
     
     // 游戏逻辑时钟域的障碍物数据
     logic [9:0] [9:0] obstacle_x_game_left;
@@ -50,9 +50,9 @@ module top(
     logic [1:0] gamemode_vga;
     
     // VGA时钟域的拖尾数据（双缓冲）
-    logic [27:0] [9:0] trail_x_vga;
-    logic [27:0] [8:0] trail_y_vga;
-    logic [27:0] [3:0] trail_life_vga;
+    logic [40:0] [9:0] trail_x_vga;
+    logic [40:0] [8:0] trail_y_vga;
+    logic [40:0] [3:0] trail_life_vga;
     
     // VGA signals
     wire [9:0] pix_x;
@@ -89,7 +89,7 @@ module top(
             gamemode_vga <= 2'b00;
             
             // 复位时初始化拖尾数据
-            for (integer i = 0; i < 28; i++) begin
+            for (integer i = 0; i < 41; i++) begin
                 trail_x_vga[i] <= 10'd0;
                 trail_y_vga[i] <= 9'd0;
                 trail_life_vga[i] <= 4'd0;
