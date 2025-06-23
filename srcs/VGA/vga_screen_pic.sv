@@ -52,12 +52,19 @@ module vga_screen_pic(
 
 //ROM数据线声明
     wire [11:0] game_start_data, player_out_data, game_over_data, background_data, heart_data;
+    // 添加障碍物ROM数据线
+    wire [11:0] black_data, skeleton_data, crepper_data, zomber_data;
+
     reg [18:0] pic_romaddrStart; // 大图片gamestart的 ROM 地址 (Start screen ROM address)
     
     reg [15:0] pic_romaddrOver; // 小图片gameover的ROM地址 (Game Over ROM address)
     reg [10:0] pic_romaddrPlayer; // Player的ROM地址 (Player ROM address)
     reg [18:0] pic_romaddrBackground;    
     reg [9:0] pic_romaddrHeart;
+    reg [9:0] pic_romaddrBlack;    // 小黑地址寄存器
+    reg [9:0] pic_romaddrSkeleton; // 小白地址寄存器 
+    reg [9:0] pic_romaddrCrepper;  // 苦力怕地址寄存器
+    reg [9:0] pic_romaddrZomber;   // 僵尸地址寄存器
 
     // Trail effect variables (拖尾效果变量)
     reg [3:0] trail_alpha; // Current trail alpha value
@@ -66,7 +73,7 @@ module vga_screen_pic(
     integer trail_idx; // Trail index for current pixel
 
 //rom模块
-    player player_rom (
+    steve player_rom (
       .clka(clk),    // input wire clka
       .addra(pic_romaddrPlayer),  // input wire [10 : 0] addra
       .douta(player_out_data)  // output wire [11 : 0] douta
@@ -92,6 +99,26 @@ module vga_screen_pic(
         .addra(pic_romaddrHeart),
         .douta(heart_data)
     );
+    black black_rom (
+        .clka(clk),
+        .addra(pic_romaddrBlack),  // 连接地址寄存器
+        .douta(black_data)         // 连接到数据线而非直接连rgb
+    );//小黑
+    skeleton skeleton_rom (
+        .clka(clk),
+        .addra(pic_romaddrSkeleton),
+        .douta(skeleton_data)
+    );
+    crepper crepper_rom (
+        .clka(clk),
+        .addra(pic_romaddrCrepper),
+        .douta(crepper_data)
+    );
+    zomber zomber_rom (
+        .clka(clk),
+        .addra(pic_romaddrZomber),
+        .douta(zomber_data)
+    );//僵尸
 
 //计算rom地址
     always_comb begin
@@ -108,6 +135,33 @@ module vga_screen_pic(
             if (pix_y >= HEART_Y && pix_y < HEART_Y + HEART_SIZE && 
                 pix_x >= HEART_X + h*HEART_SIZE && pix_x < HEART_X + (h+1)*HEART_SIZE && h < heart) begin
             pic_romaddrHeart = (pix_x - (HEART_X + h*HEART_SIZE)) + (pix_y - HEART_Y) * HEART_SIZE;
+            end
+        end
+        // 计算障碍物的ROM地址
+        pic_romaddrBlack = 0;
+        pic_romaddrSkeleton = 0;
+        pic_romaddrCrepper = 0;
+        pic_romaddrZomber = 0;
+        for (int j = 0; j < 10; j = j + 1) begin
+            if (pix_x >= obstacle_x_game_left[j] && pix_x < obstacle_x_game_left[j] + width[j]*UNIT_SIZE &&
+            pix_y >= obstacle_y_game_up[j] && pix_y < obstacle_y_game_up[j] + height[j]*UNIT_SIZE) begin
+            
+            // 计算障碍物内的相对坐标
+            automatic logic [9:0] rel_x = pix_x - obstacle_x_game_left[j];
+            automatic logic [8:0] rel_y = pix_y - obstacle_y_game_up[j];
+                
+                // 缩放到单元格内坐标(0-29)
+                automatic logic [4:0] unit_x = rel_x % UNIT_SIZE;
+                automatic logic [4:0] unit_y = rel_y % UNIT_SIZE;
+                
+                // 根据障碍物类型计算ROM地址
+                case (obstacle_class[j])
+                    2'd0: pic_romaddrBlack = unit_x + unit_y * UNIT_SIZE;    // 小黑
+                    2'd1: pic_romaddrSkeleton = unit_x + unit_y * UNIT_SIZE; // 小白 
+                    2'd2: pic_romaddrCrepper = unit_x + unit_y * UNIT_SIZE;  // 苦力怕
+                    2'd3: pic_romaddrZomber = unit_x + unit_y * UNIT_SIZE;   // 僵尸
+                endcase
+                break; // 找到一个障碍物后停止搜索
             end
         end
     end
@@ -290,10 +344,11 @@ always_comb begin
                 4'd5: rgb = background_data;    // In-game background (游戏内背景)
                 4'd8: rgb = trail_color;        // Trail particle
                 4'd9: rgb = heart_data;         // 心形图标
-                4'd10: rgb = 12'h333;          //TODO 小黑 - 深灰色
-                4'd11: rgb = 12'hFFF;          // 小白 - 白色
-                4'd12: rgb = 12'h0A0;          // 苦力怕 - 绿色
-                4'd13: rgb = 12'h070;          // 僵尸 - 暗绿色
+                // 障碍物类型对应ROM数据
+                4'd10: rgb = black_data;    // 小黑 - 使用ROM数据
+                4'd11: rgb = skeleton_data; // 小白 - 使用ROM数据
+                4'd12: rgb = crepper_data;  // 苦力怕 - 使用ROM数据
+                4'd13: rgb = zomber_data;   // 僵尸 - 使用ROM数据
                 default: rgb = DEFAULT_COLOR;
             endcase
         end
