@@ -1,4 +1,5 @@
 // File: game_logic.sv
+// Enhanced with trail effect for player - Fixed boundary velocity reset
 
 module game_logic(
     input wire rst_n,
@@ -8,13 +9,17 @@ module game_logic(
     input logic [9:0] [9:0] obstacle_x_right,
     input logic [9:0] [8:0] obstacle_y_up,
     input logic [9:0] [8:0] obstacle_y_down,
-    output reg [1:0] gamemode, // Changed to reg type for assignment in always block
-    output reg [8:0] player_y
+    output reg [1:0] gamemode,
+    output reg [8:0] player_y,
+    // Trail effect outputs
+    output reg [27:0] [9:0] trail_x,
+    output reg [27:0] [8:0] trail_y,
+    output reg [27:0] [3:0] trail_life
 );
 
     wire sw_n = ~sw[0]; // Player control switch
     reg [8:0] velocity;
-    reg [1:0] crash; // crash state
+    reg [1:0] crash; 
     reg velocity_direction; // 0 for up, 1 for down
     
     // Game constants
@@ -22,84 +27,208 @@ module game_logic(
     parameter LOWER_BOUND   = 460;
     parameter PLAYER_SIZE   = 40;
     parameter PLAYER_X_LEFT = 160;
-    parameter PLAYER_X_RIGHT= 200; // PLAYER_X_LEFT + PLAYER_SIZE
+    parameter PLAYER_X_RIGHT= 200;
     parameter MAX_VELOCITY  = 10;
     parameter ACCELERATION  = 1;
+    
+    // Trail constants
+    parameter TRAIL_COUNT      = 28;
+    parameter TRAIL_SPAWN_X    = PLAYER_X_LEFT - 8;
+    parameter TRAIL_HORIZONTAL_SPEED = 4;
+    parameter TRAIL_MAX_LIFE_CENTER = 10;
+    parameter TRAIL_MAX_LIFE_INNER  = 8;
+    parameter TRAIL_MAX_LIFE_OUTER  = 6;
 
-    // gamemode logic: crash state has highest priority
+    // Trail generation variables
+    reg [2:0] trail_timer; // Timer for trail generation
+    reg [4:0] trail_write_index; // Index for writing new trails
+
+    // Boundary collision flags
+    wire hit_upper_bound = (player_y <= UPPER_BOUND);
+    wire hit_lower_bound = (player_y >= LOWER_BOUND - PLAYER_SIZE);
+    wire hit_boundary = hit_upper_bound || hit_lower_bound;
+
+    // gamemode logic
     always_comb begin
         if (crash == 2'b11) begin
-            gamemode = 2'b11; // Crash state has highest priority
+            gamemode = 2'b11;
         end else begin
-            gamemode = sw[2:1]; // Normally follows the switch
+            gamemode = sw[2:1];
         end
     end
 
-    // --- Combinational Logic for next state calculation ---
-    wire [8:0] velocity_next;
-    wire velocity_direction_next;
-    wire [8:0] player_y_next;
-
-    // Velocity and direction logic - only update in gamemode 01
-    assign velocity_next = (gamemode == 2'b01) ? (
+    // Enhanced velocity and direction logic with boundary handling
+    wire [8:0] velocity_next = (gamemode == 2'b01) ? (
+        // If hitting boundary and trying to move into it, set velocity to 0
+        (hit_upper_bound && velocity_direction == 0) ? 9'd0 :
+        (hit_lower_bound && velocity_direction == 1) ? 9'd0 :
+        // Normal velocity calculation
         (sw_n == velocity_direction) ? 
             ((velocity + ACCELERATION > MAX_VELOCITY) ? MAX_VELOCITY : velocity + ACCELERATION) :
             ((velocity < ACCELERATION) ? (ACCELERATION - velocity) : velocity - ACCELERATION)
-    ) : velocity; // Hold current velocity in other states
+    ) : velocity;
 
-    assign velocity_direction_next = (gamemode == 2'b01) ? (
+    wire velocity_direction_next = (gamemode == 2'b01) ? (
+        // If hitting boundary, don't change direction unless switching control
+        (hit_boundary && sw_n != velocity_direction) ? ~velocity_direction :
+        // Normal direction logic
         (sw_n == velocity_direction) ? velocity_direction :
             ((velocity < ACCELERATION) ? ~velocity_direction : velocity_direction)
-    ) : velocity_direction; // Hold current direction in other states
+    ) : velocity_direction;
 
-    // Player position logic - only update in gamemode 01
+    // Player position logic - simplified since velocity is now properly controlled
     wire [8:0] player_y_calc = velocity_direction_next ? player_y + velocity_next : player_y - velocity_next;
-
-    assign player_y_next = (gamemode == 2'b01) ? (
+    wire [8:0] player_y_next = (gamemode == 2'b01) ? (
         (player_y_calc < UPPER_BOUND) ? UPPER_BOUND :
         (player_y_calc > LOWER_BOUND - PLAYER_SIZE) ? (LOWER_BOUND - PLAYER_SIZE) :
         player_y_calc
-    ) : player_y; // Hold current position in other states
+    ) : player_y;
 
-    // --- Sequential Logic (State Update) ---
+    // Sequential logic
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            player_y           <= (LOWER_BOUND + UPPER_BOUND - PLAYER_SIZE) / 2; // Center the player
+            player_y           <= (LOWER_BOUND + UPPER_BOUND - PLAYER_SIZE) / 2;
             velocity           <= 0;
             crash              <= 2'b00;
             velocity_direction <= 0;
-        end else if (sw[2:1] == 2'b00) begin // Reset game when switch returns to initial state
+            trail_timer        <= 0;
+            trail_write_index  <= 0;
+            
+            // Initialize trail points
+            for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
+                trail_x[i] <= 10'd0;
+                trail_y[i] <= 9'd0;
+                trail_life[i] <= 4'd0;
+            end
+            
+        end else if (sw[2:1] == 2'b00) begin // Reset game
             player_y           <= (LOWER_BOUND + UPPER_BOUND - PLAYER_SIZE) / 2;
             velocity           <= 0;
-            crash              <= 2'b00; // Clear crash state, allow restart
+            crash              <= 2'b00;
             velocity_direction <= 0;
-        end else if (crash != 2'b11) begin // Only update game logic when not in crash state
+            trail_timer        <= 0;
+            trail_write_index  <= 0;
+            
+            // Clear all trail points
+            for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
+                trail_x[i] <= 10'd0;
+                trail_y[i] <= 9'd0;
+                trail_life[i] <= 4'd0;
+            end
+            
+        end else if (crash != 2'b11) begin // Normal game logic
             player_y           <= player_y_next;
             velocity           <= velocity_next;
             velocity_direction <= velocity_direction_next;
 
+            // Update existing trail points
+            for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
+                if (trail_life[i] > 0) begin
+                    // Move trail point horizontally (向左移动)
+                    trail_x[i] <= trail_x[i] - TRAIL_HORIZONTAL_SPEED;
+                    
+                    // Apply subtle vertical movement based on ACTUAL velocity and direction
+                    // Only apply vertical movement if velocity is significant and not at boundary
+                    if (gamemode == 2'b01 && velocity > 1 && !hit_boundary) begin
+                        if (velocity_direction == 0) begin
+                            // Player moving up, trail moves down slightly
+                            trail_y[i] <= trail_y[i] + (velocity >> 2);
+                        end else begin
+                            // Player moving down, trail moves up slightly
+                            if (trail_y[i] >= (velocity >> 2)) begin
+                                trail_y[i] <= trail_y[i] - (velocity >> 2);
+                            end else begin
+                                trail_y[i] <= 0;
+                            end
+                        end
+                    end
+                    // If at boundary or low velocity, trail moves purely horizontally
+                    
+                    // Decrease life counter
+                    trail_life[i] <= trail_life[i] - 1;
+                    
+                    // Remove trail points that go off screen or die
+                    if (trail_x[i] < 10 || trail_life[i] == 1) begin
+                        trail_life[i] <= 4'd0;
+                    end
+                end
+            end
+            
+            // Enhanced trail spawning - adjust based on velocity and boundary status
+            if (gamemode == 2'b01) begin
+                trail_timer <= trail_timer + 1;
+                
+                // Every 2 cycles, try to spawn a new trail point
+                if (trail_timer >= 2) begin
+                    trail_timer <= 0;
+                    
+                    // Find next available index (循环使用)
+                    trail_write_index <= (trail_write_index >= TRAIL_COUNT - 1) ? 0 : (trail_write_index + 1);
+                    
+                    // Always spawn at the current write index (overwrite if necessary)
+                    trail_x[trail_write_index] <= TRAIL_SPAWN_X;
+                    trail_y[trail_write_index] <= player_y + PLAYER_SIZE/2; // Start with center point
+                    trail_life[trail_write_index] <= TRAIL_MAX_LIFE_CENTER;
+                    
+                    // Spawn offset points with adjusted positioning based on velocity
+                    if (trail_write_index + 1 < TRAIL_COUNT && trail_life[trail_write_index + 1] == 0) begin
+                        trail_x[trail_write_index + 1] <= TRAIL_SPAWN_X;
+                        // Adjust vertical offset based on movement direction and velocity
+                        if (velocity > 3 && !hit_boundary) begin
+                            trail_y[trail_write_index + 1] <= velocity_direction ? 
+                                (player_y + PLAYER_SIZE/2 - (velocity >> 1)) : 
+                                (player_y + PLAYER_SIZE/2 + (velocity >> 1));
+                        end else begin
+                            trail_y[trail_write_index + 1] <= player_y + PLAYER_SIZE/2 - 8;
+                        end
+                        trail_life[trail_write_index + 1] <= TRAIL_MAX_LIFE_INNER;
+                    end
+                    
+                    if (trail_write_index + 2 < TRAIL_COUNT && trail_life[trail_write_index + 2] == 0) begin
+                        trail_x[trail_write_index + 2] <= TRAIL_SPAWN_X;
+                        // Adjust vertical offset based on movement direction and velocity
+                        if (velocity > 3 && !hit_boundary) begin
+                            trail_y[trail_write_index + 2] <= velocity_direction ? 
+                                (player_y + PLAYER_SIZE/2 + (velocity >> 1)) : 
+                                (player_y + PLAYER_SIZE/2 - (velocity >> 1));
+                        end else begin
+                            trail_y[trail_write_index + 2] <= player_y + PLAYER_SIZE/2 + 8;
+                        end
+                        trail_life[trail_write_index + 2] <= TRAIL_MAX_LIFE_INNER;
+                    end
+                end
+            end
+
             // Collision detection logic - only in gamemode 01
             if (gamemode == 2'b01) begin
-                crash <= 2'b00; // Assume no collision at start
+                crash <= 2'b00; // Assume no collision initially
                 for (integer k = 0; k < 10; k = k + 1) begin
-                    logic [9:0] obs_x_left   = obstacle_x_left[k];
-                    logic [9:0] obs_x_right  = obstacle_x_right[k];
-                    logic [8:0] obs_y_top    = obstacle_y_up[k];
-                    logic [8:0] obs_y_bottom = obstacle_y_down[k];
-
                     // AABB collision detection algorithm
-                    if ( (PLAYER_X_RIGHT > obs_x_left) &&
-                         (PLAYER_X_LEFT < obs_x_right) &&
-                         (player_y + PLAYER_SIZE > obs_y_top) &&
-                         (player_y < obs_y_bottom) ) 
+                    if ( (PLAYER_X_RIGHT > obstacle_x_left[k]) &&
+                         (PLAYER_X_LEFT < obstacle_x_right[k]) &&
+                         (player_y + PLAYER_SIZE > obstacle_y_up[k]) &&
+                         (player_y < obstacle_y_down[k]) ) 
                     begin
                         crash <= 2'b11; // Set crash state
                     end
                 end
             end
-            // No crash detection in gamemode 10, keep current crash state
+            
+        end else begin
+            // In crash state, still update existing trail points but don't spawn new ones
+            for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
+                if (trail_life[i] > 0) begin
+                    // Continue moving existing trail points
+                    trail_x[i] <= trail_x[i] - TRAIL_HORIZONTAL_SPEED;
+                    trail_life[i] <= trail_life[i] - 1;
+                    
+                    // Remove trail points that go off screen or die
+                    if (trail_x[i] < 10 || trail_life[i] == 1) begin
+                        trail_life[i] <= 4'd0;
+                    end
+                end
+            end
         end
-        // In crash state, hold current state until reset
     end
 
 endmodule
