@@ -121,7 +121,7 @@ module vga_screen_pic(
     end
 
     // State signal for pixel type (像素类型状态信号)
-    reg [2:0] pixel_state;
+    reg [3:0] pixel_state;  // Changed from [2:0] to [3:0]
     integer i;
     //确定当前像素的状态
     //0: Border (边界)
@@ -133,20 +133,21 @@ module vga_screen_pic(
     //6: 初始画面
     //7: Paused screen (暂停画面)
     //8: Trail particle (拖尾粒子) - New state
+    //9-15: Reserved for future use
     always_comb begin
-        pixel_state = 3'd5; // Default to in-game background
+        pixel_state = 4'd5; // Default to in-game background
 
         //(初始画面)
         if (gamemode == 2'b00) begin
-            pixel_state = 3'd6;
+            pixel_state = 4'd6;
         end
         // In-game screen (游戏进行画面) - gamemode 2'b01
         else if (gamemode == 2'b01) begin
             if (pix_y <= UPPER_BOUND || pix_y >= LOWER_BOUND) begin
-                pixel_state = 3'd0; // Border
+                pixel_state = 4'd0; // Border
             end else if (pix_x >= PLAYER_X && pix_x < PLAYER_X + PLAYER_SIZE &&
                      pix_y >= player_y && pix_y < player_y + PLAYER_SIZE) begin
-                pixel_state = 3'd2; // Player
+                pixel_state = 4'd2; // Player
             end else begin
                 logic is_obstacle;
                 is_obstacle = 1'b0;
@@ -159,28 +160,28 @@ module vga_screen_pic(
                 end
 
                 if (is_obstacle) begin
-                    pixel_state = 3'd1; // Obstacle
+                    pixel_state = 4'd1; // Obstacle
                 end else if (trail_hit) begin
-                    pixel_state = 3'd8; // Trail particle
+                    pixel_state = 4'd8; // Trail particle
                 end else begin
-                    pixel_state = 3'd5; // In-game background
+                    pixel_state = 4'd5; // In-game background
                 end
             end
         end
         // Paused screen (暂停画面)
         else if (gamemode == 2'b10) begin
-            pixel_state = 3'd7;
+            pixel_state = 4'd7;
         end
         // Game over screen (游戏结束画面)
         else if (gamemode == 2'b11) begin
             if (pix_x >= GAMEOVER_X && pix_x < GAMEOVER_X + H_PIC &&
                 pix_y >= GAMEOVER_Y && pix_y < GAMEOVER_Y + H_PIC) begin
-                pixel_state = 3'd3; // Game Over image
+                pixel_state = 4'd3; // Game Over image
             end else if (pix_y <= UPPER_BOUND || pix_y >= LOWER_BOUND) begin
-                pixel_state = 3'd0; // Border
+                pixel_state = 4'd0; // Border
             end else if (pix_x >= PLAYER_X && pix_x < PLAYER_X + PLAYER_SIZE &&
                        pix_y >= player_y && pix_y < player_y + PLAYER_SIZE) begin
-                pixel_state = 3'd2; // Player
+                pixel_state = 4'd2; // Player
             end else begin
                 logic is_obstacle;
                 is_obstacle = 1'b0;
@@ -193,11 +194,11 @@ module vga_screen_pic(
                 end
 
                 if (is_obstacle) begin
-                    pixel_state = 3'd1; // Obstacle
+                    pixel_state = 4'd1; // Obstacle
                 end else if (trail_hit) begin
-                    pixel_state = 3'd8; // Trail particle
+                    pixel_state = 4'd8; // Trail particle
                 end else begin
-                    pixel_state = 3'd4; // Game over background
+                    pixel_state = 4'd4; // Game over background
                 end
             end
         end
@@ -214,11 +215,11 @@ module vga_screen_pic(
             end
             2'b01: begin // In-game mode (游戏进行模式)
                 case (pixel_state)
-                    3'd0: rgb = DEFAULT_COLOR;    // Border
-                    3'd1: rgb = COLOR_OBSTACLE;  // Obstacle
-                    3'd2: rgb = player_out_data; // Player
-                    3'd5: rgb = COLOR_INGAME;    // In-game background
-                    3'd8: rgb = trail_color;     // Trail particle
+                    4'd0: rgb = DEFAULT_COLOR;    // Border
+                    4'd1: rgb = COLOR_OBSTACLE;  // Obstacle
+                    4'd2: rgb = player_out_data; // Player
+                    4'd5: rgb = COLOR_INGAME;    // In-game background
+                    4'd8: rgb = trail_color;     // Trail particle
                     default: rgb = COLOR_INGAME; // Fallback to in-game background
                 endcase
             end
@@ -227,12 +228,12 @@ module vga_screen_pic(
             end
             2'b11: begin // Game over mode (游戏结束模式)
                 case (pixel_state)
-                    3'd0: rgb = DEFAULT_COLOR;    // Border
-                    3'd1: rgb = COLOR_OBSTACLE;  // Obstacle
-                    3'd2: rgb = player_out_data; // Player
-                    3'd3: rgb = game_over_data;  // Game over image
-                    3'd4: rgb = COLOR_ENDED;     // Game over background
-                    3'd8: rgb = trail_color;     // Trail particle
+                    4'd0: rgb = DEFAULT_COLOR;    // Border
+                    4'd1: rgb = COLOR_OBSTACLE;  // Obstacle
+                    4'd2: rgb = player_out_data; // Player
+                    4'd3: rgb = game_over_data;  // Game over image
+                    4'd4: rgb = COLOR_ENDED;     // Game over background
+                    4'd8: rgb = trail_color;     // Trail particle
                     default: rgb = COLOR_ENDED; // Fallback to game-over background
                 endcase
             end
