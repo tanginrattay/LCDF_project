@@ -7,10 +7,11 @@ module vga_screen_pic(
     input wire [8:0] player_y,
     input wire [2:0] heart, //一共有5条命
 
+    input logic [9:0] [1:0] obstacle_class, 
     input logic [9:0] [9:0] obstacle_x_game_left,
-    input logic [9:0] [9:0] obstacle_x_game_right,
+    input logic [9:0] [2:0] width,
     input logic [9:0] [8:0] obstacle_y_game_up,
-    input logic [9:0] [8:0] obstacle_y_game_down,
+    input logic [9:0] [3:0] height,
     // Trail effect inputs
     input logic [40:0] [9:0] trail_x,
     input logic [40:0] [8:0] trail_y,
@@ -47,7 +48,7 @@ module vga_screen_pic(
               HEART_Y = 10'd460,
               HEART_X = 10'd0,
               MAX_HEART = 5; // 最大心形数量
-
+    parameter UNIT_SIZE = 30;
 
 //ROM数据线声明
     wire [11:0] game_start_data, player_out_data, game_over_data, background_data, heart_data;
@@ -160,10 +161,10 @@ module vga_screen_pic(
     //8: Trail particle (拖尾粒子) - New state
     //9: Heart (心形图标)
     //TODO
-    //10: 障碍物-小黑
-    //11: 障碍物-小白
-    //12: 障碍物-苦力怕
-    //13: 障碍物-僵尸
+    //10: 障碍物-小黑  obstacle_class = 2‘d0
+    //11: 障碍物-小白   obstacle_class = 2‘d1
+    //12: 障碍物-苦力怕 obstacle_class = 2‘d2
+    //13: 障碍物-僵尸 obstacle_class = 2‘d3
 //判断像素状态
     always_comb begin
         pixel_state = 4'd0; // Default to background (默认为背景)
@@ -181,7 +182,8 @@ module vga_screen_pic(
                     end
                 end
             end
-            else if (pixel_state != 4'd9) begin
+            // 如果不是heart，再判断其他
+            if (pixel_state != 4'd9) begin
                 if (gamemode == 2'b01) begin
                     if (pix_y <= UPPER_BOUND || pix_y >= LOWER_BOUND) begin
                         pixel_state = 4'd0; // Border (边界)
@@ -194,45 +196,72 @@ module vga_screen_pic(
                         logic is_obstacle;
                         is_obstacle = 1'b0;
                         for (i = 0; i < 10; i = i + 1) begin
-                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_right[i] &&
-                            pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_down[i]) begin
+                            // 使用width和height参数计算障碍物边界
+                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_left[i] + width[i]*UNIT_SIZE &&
+                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_up[i] + height[i]*UNIT_SIZE) begin
+                                
+                                // 根据obstacle_class设置对应的状态
+                                case (obstacle_class[i])
+                                    2'd0: pixel_state = 4'd10;  // 小黑
+                                    2'd1: pixel_state = 4'd11;  // 小白
+                                    2'd2: pixel_state = 4'd12;  // 苦力怕
+                                    2'd3: pixel_state = 4'd13;  // 僵尸
+                                    default: pixel_state = 4'd1; // 默认障碍物
+                                endcase
+                                
                                 is_obstacle = 1'b1;
                                 break;
                             end
                         end
 
-                        if (is_obstacle)
-                            pixel_state = 4'd1; // Obstacle
-                        else if (trail_hit) pixel_state = 4'd8; // Trail particle
-                        else pixel_state = 4'd5; // In-game background
+                        if (!is_obstacle) begin
+                            if (trail_hit) pixel_state = 4'd8; // Trail particle
+                            else pixel_state = 4'd5; // In-game background
+                        end
                     end
                 end
                 else if (gamemode == 2'b11) begin
+                    // Game Over图片
                     if (pix_x >= GAMEOVER_X && pix_x < GAMEOVER_X + H_PIC &&
                         pix_y >= GAMEOVER_Y && pix_y < GAMEOVER_Y + H_PIC) begin
-                        pixel_state = 4'd3; // Game Over image
+                        pixel_state = 4'd3; 
                     end 
+                    // 边界
                     else if (pix_y <= UPPER_BOUND || pix_y >= LOWER_BOUND) begin
-                        pixel_state = 4'd0; // Border
+                        pixel_state = 4'd0; 
                     end 
+                    // 玩家
                     else if (pix_x >= PLAYER_X && pix_x < PLAYER_X + PLAYER_SIZE &&
                         pix_y >= player_y && pix_y < player_y + PLAYER_SIZE) begin
-                        pixel_state = 4'd2; // Player
+                        pixel_state = 4'd2;
                     end 
+                    // 障碍物和背景
                     else begin
                         logic is_obstacle;
                         is_obstacle = 1'b0;
                         for (i = 0; i < 10; i = i + 1) begin
-                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_right[i] &&
-                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_down[i]) begin
+                            // 使用width和height参数计算障碍物边界
+                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_left[i] + width[i]*UNIT_SIZE &&
+                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_up[i] + height[i]*UNIT_SIZE) begin
+                                
+                                // 根据obstacle_class设置对应的状态
+                                case (obstacle_class[i])
+                                    2'd0: pixel_state = 4'd10;  // 小黑
+                                    2'd1: pixel_state = 4'd11;  // 小白
+                                    2'd2: pixel_state = 4'd12;  // 苦力怕
+                                    2'd3: pixel_state = 4'd13;  // 僵尸
+                                    default: pixel_state = 4'd1; // 默认障碍物
+                                endcase
+                                
                                 is_obstacle = 1'b1;
                                 break;
                             end
                         end
 
-                        if (is_obstacle) pixel_state = 4'd1; // Obstacle
-                        else if (trail_hit) pixel_state = 4'd8; // Trail particle
-                        else pixel_state = 4'd4; // Game over background
+                        if (!is_obstacle) begin
+                            if (trail_hit) pixel_state = 4'd8; // Trail particle
+                            else pixel_state = 4'd4; // Game over background
+                        end
                     end
                 end //end gamemode 2'b11
                 else if (gamemode == 2'b10) pixel_state = 4'd7;
@@ -242,44 +271,39 @@ module vga_screen_pic(
             end
         end
     end //end pixel_state detection
-//根据游戏模式和像素状态赋值RGB颜色
-    always_comb begin
-        // Default to black
-        rgb = DEFAULT_COLOR; 
-        case (gamemode)
-            2'b00: begin // 初始游戏模式
-                    rgb = game_start_data;
-            end
-            2'b01: begin // 游戏进行模式
-                case (pixel_state)
-                    4'd0: rgb = DEFAULT_COLOR;      // Border (边界) or Default (默认)
-                    4'd1: rgb = COLOR_OBSTACLE;     // Obstacle (障碍物)
-                    4'd2: rgb = player_out_data;    // Player (玩家)
-                    4'd5: rgb = background_data;    // In-game background (游戏内背景)
-                    4'd8: rgb = trail_color;        // Trail particle
-                    4'd9: rgb = heart_data;         // TODO显示心形图标
-                    default: rgb = DEFAULT_COLOR;   // Fallback (回退)
-                endcase
-            end
-            2'b10: begin //暂停模式
-                if (pixel_state == 4'd9)
-                    rgb = heart_data; // 显示心形图标
-                else
-                    rgb = COLOR_PAUSED;
-            end
-            2'b11: begin // Game over mode (游戏结束模式)
-                case (pixel_state)
-                    4'd0: rgb = DEFAULT_COLOR;      //边界
-                    4'd1: rgb = COLOR_OBSTACLE;     // Obstacle (障碍物)
-                    4'd2: rgb = player_out_data;    // Player (玩家)
-                    4'd3: rgb = game_over_data;     //游戏结束图片
-                    4'd4: rgb = COLOR_ENDED;        //游戏结束背景
-                    4'd8: rgb = trail_color;        // Trail particle
-                    4'd9: rgb = heart_data;         // 显示心形图标
-                    default: rgb = DEFAULT_COLOR;
-                endcase
-            end
-            default: rgb = DEFAULT_COLOR;
-        endcase
-    end
+
+// 修改RGB输出部分，处理不同类型障碍物的颜色
+always_comb begin
+    // Default to black
+    rgb = DEFAULT_COLOR; 
+    case (gamemode)
+        2'b00: begin // 初始游戏模式
+                rgb = game_start_data;
+        end
+        2'b01, 2'b11: begin // 游戏进行模式和游戏结束模式
+            case (pixel_state)
+                4'd0: rgb = DEFAULT_COLOR;      // Border (边界) or Default (默认)
+                4'd1: rgb = COLOR_OBSTACLE;     // 普通障碍物
+                4'd2: rgb = player_out_data;    // Player (玩家)
+                4'd3: rgb = game_over_data;     // 游戏结束图片
+                4'd4: rgb = COLOR_ENDED;        // 游戏结束背景
+                4'd5: rgb = background_data;    // In-game background (游戏内背景)
+                4'd8: rgb = trail_color;        // Trail particle
+                4'd9: rgb = heart_data;         // 心形图标
+                4'd10: rgb = 12'h333;          //TODO 小黑 - 深灰色
+                4'd11: rgb = 12'hFFF;          // 小白 - 白色
+                4'd12: rgb = 12'h0A0;          // 苦力怕 - 绿色
+                4'd13: rgb = 12'h070;          // 僵尸 - 暗绿色
+                default: rgb = DEFAULT_COLOR;
+            endcase
+        end
+        2'b10: begin //暂停模式
+            if (pixel_state == 4'd9)
+                rgb = heart_data; // 显示心形图标
+            else
+                rgb = COLOR_PAUSED;
+        end
+        default: rgb = DEFAULT_COLOR;
+    endcase
+end
 endmodule
