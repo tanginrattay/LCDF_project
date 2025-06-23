@@ -4,7 +4,7 @@ module vga_screen_pic(
     input wire clk,
     input wire [1:0] gamemode,
     input wire [8:0] player_y,
-    input wire clk_60hz,
+    input wire [9:0] displacement,
     input logic [9:0] [9:0] obstacle_x_game_left,
     input logic [9:0] [9:0] obstacle_x_game_right,
     input logic [9:0] [8:0] obstacle_y_game_up,
@@ -33,7 +33,6 @@ module vga_screen_pic(
 
     localparam SCROLL_SPEED = 4;
 
-    reg [9:0] position_changed = 0; // 用于滚动背景的变量 (Variable for scrolling background)
     // Wire declarations for ROM data (ROM数据线声明)
     wire [11:0] game_start_data, player_out_data, game_over_data, background_data;
     // ROM address declarations (ROM地址声明)
@@ -43,17 +42,17 @@ module vga_screen_pic(
     reg [18:0] pic_romaddrBackground;    
 
     // Instance of ROM blocks (ROM模块实例化)
-    player player_rom (
+    blk_mem_gen_1 player_rom (
       .clka(clk),
       .addra(pic_romaddrPlayer),
       .douta(player_out_data)
     );
-    start game_start_rom (
+    blk_mem_gen_2 game_start_rom (
       .clka(clk),
       .addra(pic_romaddrStart),
       .douta(game_start_data)
     );
-    game_over game_over_rom (
+   blk_mem_gen_3  game_over_rom (
       .clka(clk),
       .addra(pic_romaddrOver),
       .douta(game_over_data)
@@ -65,7 +64,7 @@ module vga_screen_pic(
     );
     // (直接赋值 pic_romaddrStart，因为它直接来源于 pix_x, pix_y 和 SCREEN_W_PIC)
     assign pic_romaddrStart = pix_x + pix_y * SCREEN_W_PIC;
-    assign pic_romaddrBackground = (pix_y >= UPPER_BOUND && pix_y < LOWER_BOUND) ?  (pix_x + position_changed) % SCREEN_W_PIC + (pix_y - UPPER_BOUND) * SCREEN_W_PIC : 0; // In-game background ROM address
+    assign pic_romaddrBackground = (pix_y >= UPPER_BOUND && pix_y < LOWER_BOUND) ?  (pix_x + displacement) % SCREEN_W_PIC + (pix_y - UPPER_BOUND) * SCREEN_W_PIC : 0; // In-game background ROM address
     // 计算玩家和游戏结束图片的ROM地址
     always_comb begin
         pic_romaddrPlayer = (pix_x >= PLAYER_X && pix_x < PLAYER_X + PLAYER_SIZE &&
@@ -77,14 +76,6 @@ module vga_screen_pic(
     end
 
 
-    always @(posedge clk_60hz)begin
-            if(gamemode == 2'b00)begin
-                position_changed <= 0;
-            end
-            else if(gamemode == 2'b01)begin
-                position_changed <= (position_changed + SCROLL_SPEED) % SCREEN_W_PIC ; // Scroll left (向左滚动)
-            end
-    end
 
     // State signal for pixel type (像素类型状态信号)
     reg [2:0] pixel_state;

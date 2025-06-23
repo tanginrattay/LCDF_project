@@ -116,6 +116,7 @@ end
         .clk(clk),
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
+        .displacement(displacement_vga), // 使用VGA时钟域的同步数据
         .obstacle_x_game_left(obstacle_x_left_vga),
         .obstacle_x_game_right(obstacle_x_right_vga),
         .obstacle_y_game_up(obstacle_y_up_vga),
