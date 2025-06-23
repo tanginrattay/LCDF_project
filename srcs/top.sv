@@ -111,6 +111,7 @@ end
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
+        .score(score),
         .obstacle_x_left(obstacle_x_game_left),
         .obstacle_x_right(obstacle_x_game_right),
         .obstacle_y_up(obstacle_y_game_up),
@@ -146,7 +147,7 @@ end
     );
     
     // --- Other Peripherals ---
-    assign gamemode_led = gamemode;
+    assign gamemode_led = score[1:0];
 
     assign score_rst = (gamemode == 2'b00); // Reset score when in initial state
     BinToBCD bcd_instance (

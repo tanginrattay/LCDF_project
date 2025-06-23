@@ -1,33 +1,60 @@
 module BinToBCD(
-    input  wire [13:0] bin,    // 14-bit binary input, max 9999
-    output reg  [3:0] bcd3,    // Thousands digit
-    output reg  [3:0] bcd2,    // Hundreds digit
-    output reg  [3:0] bcd1,    // Tens digit
-    output reg  [3:0] bcd0     // Ones digit
+    input  wire [13:0] bin,    // 14-bit binary input
+    output reg  [3:0]  bcd3,   // 千位
+    output reg  [3:0]  bcd2,   // 百位
+    output reg  [3:0]  bcd1,   // 十位
+    output reg  [3:0]  bcd0    // 个位
 );
-    integer i;
-    reg [17:0] shift; // 14 bits for input + 4 bits for BCD = 18 bits
 
+    reg [13:0] temp;
+    
     always @(*) begin
-        // Initialize shift register
-        shift = 18'd0;
-        shift[13:0] = bin;
-
-        // Double Dabble (shift-add-3) algorithm for BCD conversion
-        for (i = 0; i < 14; i = i + 1) begin
-            // Add 3 to BCD digits >= 5 before shifting
-            if (shift[17:14] >= 5) shift[17:14] = shift[17:14] + 3;
-            if (shift[13:10] >= 5) shift[13:10] = shift[13:10] + 3;
-            if (shift[9:6]   >= 5) shift[9:6]   = shift[9:6]   + 3;
-            if (shift[5:2]   >= 5) shift[5:2]   = shift[5:2]   + 3;
-            // Shift left by 1
-            shift = shift << 1;
-        end
-
-        // Assign BCD outputs
-        bcd3 = shift[17:14]; // Thousands
-        bcd2 = shift[13:10]; // Hundreds
-        bcd1 = shift[9:6];   // Tens
-        bcd0 = shift[5:2];   // Ones
+        temp = bin;
+        
+        // 直接除法实现（综合工具会优化）
+        bcd3 = temp / 1000;
+        temp = temp % 1000;
+        
+        bcd2 = temp / 100;
+        temp = temp % 100;
+        
+        bcd1 = temp / 10;
+        bcd0 = temp % 10;
     end
+    
+endmodule
+
+// 时序版本（如果需要在时钟边沿更新）
+module BinToBCD_Clocked(
+    input  wire        clk,
+    input  wire        rst,
+    input  wire [13:0] bin,
+    output reg  [3:0]  bcd3,
+    output reg  [3:0]  bcd2,
+    output reg  [3:0]  bcd1,
+    output reg  [3:0]  bcd0
+);
+
+    reg [13:0] temp;
+    
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            bcd3 <= 4'd0;
+            bcd2 <= 4'd0;
+            bcd1 <= 4'd0;
+            bcd0 <= 4'd0;
+        end else begin
+            temp = bin;
+            
+            bcd3 <= temp / 1000;
+            temp = temp % 1000;
+            
+            bcd2 <= temp / 100;
+            temp = temp % 100;
+            
+            bcd1 <= temp / 10;
+            bcd0 <= temp % 10;
+        end
+    end
+    
 endmodule
