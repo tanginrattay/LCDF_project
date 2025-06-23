@@ -40,7 +40,7 @@ localparam MAX_GAP_DIFFICULTY = 180;
 localparam PLAYER_SIZE_Y      = 40;
 
 // Boundary bias parameters
-localparam BOUNDARY_PREFERENCE_THRESHOLD = 8'd102;  // 40% probability to select boundary (102/255 鈮� 40%)
+localparam BOUNDARY_PREFERENCE_THRESHOLD = 8'd102;  // 40% probability to select boundary (102/255 ≈ 40%)
 localparam UPPER_BOUNDARY_ZONE_SIZE = 60;           // Upper boundary zone size
 localparam LOWER_BOUNDARY_ZONE_SIZE = 60;           // Lower boundary zone size
 

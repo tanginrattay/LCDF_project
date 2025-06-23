@@ -11,7 +11,7 @@ module top(
     output wire [3:0] B,    // VGA Blue output
     output wire HS,         // VGA Horizontal Sync
     output wire VS,         // VGA Vertical Sync
-//  output wire beep,
+    output wire beep,
     output wire [3:0] AN,
     output wire [7:0] SEGMENT,
     output wire [1:0] gamemode_led
@@ -160,10 +160,11 @@ end
     DisplayNumber d1(.clk(clk), .RST(score_rst), .Hexs({bcd3, bcd2, bcd1, bcd0}), 
                     .Points(4'b0000), .LES(4'b0000), .Segment(SEGMENT), .AN(AN));
 
-//    top_beep u_top_beep(
-//        .clk(clk),
-//        .gamemode(gamemode),
-//        .beep(beep)
-//    );
+    top_beep u_top_beep(
+        .clk(clk),
+        .gamemode(gamemode),
+        .sw(sw[0]),
+        .beep(beep)
+    );
 
 endmodule
