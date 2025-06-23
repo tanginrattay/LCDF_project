@@ -12,6 +12,8 @@ module top(
     output wire HS,         // VGA Horizontal Sync
     output wire VS,         // VGA Vertical Sync
 //  output wire beep,
+    output wire [3:0] AN,
+    output wire [7:0] SEGMENT,
     output wire [1:0] gamemode_led
 );
 
@@ -20,6 +22,12 @@ module top(
     wire clk_25mhz;       // 25MHz clock for VGA pixel timing
     wire clk_60hz;        // 60Hz clock for game logic timing
     
+    wire score_rst; // Reset signal for score display
+    
+    wire [13:0] score;
+    wire [3:0] bcd3, bcd2, bcd1, bcd0; // BCD outputs for score displayB
+   
+
     wire [1:0] gamemode;
     wire [8:0] player_y;
     
@@ -103,6 +111,7 @@ end
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
+        .score(score),
         .obstacle_x_left(obstacle_x_game_left),
         .obstacle_x_right(obstacle_x_game_right),
         .obstacle_y_up(obstacle_y_game_up),
@@ -138,6 +147,23 @@ end
     );
     
     // --- Other Peripherals ---
-    assign gamemode_led = gamemode;
+    assign gamemode_led = score[1:0];
+
+    assign score_rst = (gamemode == 2'b00); // Reset score when in initial state
+    BinToBCD bcd_instance (
+        .bin(score),
+        .bcd3(bcd3),
+        .bcd2(bcd2),
+        .bcd1(bcd1),
+        .bcd0(bcd0)
+    );
+    DisplayNumber d1(.clk(clk), .RST(score_rst), .Hexs({bcd3, bcd2, bcd1, bcd0}), 
+                    .Points(4'b0000), .LES(4'b0000), .Segment(SEGMENT), .AN(AN));
+
+//    top_beep u_top_beep(
+//        .clk(clk),
+//        .gamemode(gamemode),
+//        .beep(beep)
+//    );
 
 endmodule
