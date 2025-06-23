@@ -30,7 +30,7 @@ module vga_screen_pic(
                 COLOR_PLAYER    = 12'h00F; // 
 
     // Trail effect constants (拖尾效果常量)
-    parameter   TRAIL_SIZE      = 8,        // Trail particle size
+    parameter   TRAIL_SIZE      = 4,        // Trail particle size
                 TRAIL_BASE_COLOR = 12'h44F, // Base trail color (darker blue)
                 TRAIL_FADE_LEVELS = 10;     // Number of fade levels
 
@@ -89,12 +89,12 @@ module vga_screen_pic(
         trail_hit = 1'b0;
         trail_alpha = 4'd0;
         trail_idx = 0;
-        
         // Check all trail particles to see if current pixel hits any
         for (integer i = 0; i < 41; i = i + 1) begin
-            if (trail_life[i] > 0 && 
-                pix_x >= trail_x[i] && pix_x < trail_x[i] + TRAIL_SIZE &&
-                pix_y >= trail_y[i] && pix_y < trail_y[i] + TRAIL_SIZE) begin
+            // Use center as reference, so calculate left/top and right/bottom
+            if (trail_life[i] > 0 &&
+                pix_x >= (trail_x[i] - TRAIL_SIZE/2) && pix_x < (trail_x[i] + (TRAIL_SIZE+1)/2) &&
+                pix_y >= (trail_y[i] - TRAIL_SIZE/2) && pix_y < (trail_y[i] + (TRAIL_SIZE+1)/2)) begin
                 trail_hit = 1'b1;
                 trail_alpha = trail_life[i]; // Use life as alpha intensity
                 trail_idx = i;
