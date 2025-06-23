@@ -38,10 +38,12 @@ module game_logic(
     parameter TRAIL_MAX_LIFE_CENTER = 10;
     parameter TRAIL_MAX_LIFE_INNER  = 8;
     parameter TRAIL_MAX_LIFE_OUTER  = 6;
+    parameter SPAWN_DELAY = 3; // 新增生成粒子的延迟参数
 
     // Trail generation variables
     reg [2:0] trail_timer; // Timer for trail generation
     reg [4:0] trail_write_index; // Index for writing new trails
+    reg [3:0] spawn_timer; // Timer for controlling particle spawn rate
 
     // Boundary collision flags
     wire hit_upper_bound = (player_y <= UPPER_BOUND);
@@ -93,6 +95,7 @@ module game_logic(
             velocity_direction <= 0;
             trail_timer        <= 0;
             trail_write_index  <= 0;
+            spawn_timer        <= 0;
             
             // Initialize trail points
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
@@ -108,6 +111,7 @@ module game_logic(
             velocity_direction <= 0;
             trail_timer        <= 0;
             trail_write_index  <= 0;
+            spawn_timer        <= 0;
             
             // Clear all trail points
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
@@ -227,6 +231,50 @@ module game_logic(
                         trail_life[i] <= 4'd0;
                     end
                 end
+            end
+        end
+    end
+
+    // 新增粒子生成逻辑
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // 复位逻辑
+        end else if (gamemode == 2'b01) begin // 游戏进行中
+            // 更新所有已存在粒子的位置和生命值
+            
+            // 每帧固定生成5个新粒子
+            if (spawn_timer == 0) begin  // 可以控制生成频率
+                // 计算当前写入索引，每次增加5
+                trail_write_index <= (trail_write_index >= TRAIL_COUNT - 5) ? 0 : trail_write_index + 5;
+                
+                // 最上点 (玩家上边界)
+                trail_x[trail_write_index] <= TRAIL_SPAWN_X;
+                trail_y[trail_write_index] <= player_y;
+                trail_life[trail_write_index] <= TRAIL_MAX_LIFE_OUTER;
+                
+                // 上点 (中心上方)
+                trail_x[trail_write_index+1] <= TRAIL_SPAWN_X;
+                trail_y[trail_write_index+1] <= player_y + PLAYER_SIZE/4;
+                trail_life[trail_write_index+1] <= TRAIL_MAX_LIFE_INNER;
+                
+                // 中心点
+                trail_x[trail_write_index+2] <= TRAIL_SPAWN_X;
+                trail_y[trail_write_index+2] <= player_y + PLAYER_SIZE/2;
+                trail_life[trail_write_index+2] <= TRAIL_MAX_LIFE_CENTER;
+                
+                // 下点 (中心下方)
+                trail_x[trail_write_index+3] <= TRAIL_SPAWN_X;
+                trail_y[trail_write_index+3] <= player_y + PLAYER_SIZE*3/4;
+                trail_life[trail_write_index+3] <= TRAIL_MAX_LIFE_INNER;
+                
+                // 最下点 (玩家下边界)
+                trail_x[trail_write_index+4] <= TRAIL_SPAWN_X;
+                trail_y[trail_write_index+4] <= player_y + PLAYER_SIZE;
+                trail_life[trail_write_index+4] <= TRAIL_MAX_LIFE_OUTER;
+                
+                spawn_timer <= SPAWN_DELAY; // 设置生成间隔
+            end else begin
+                spawn_timer <= spawn_timer - 1;
             end
         end
     end
