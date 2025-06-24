@@ -9,9 +9,9 @@ module vga_screen_pic(
 
     input logic [9:0] [1:0] obstacle_class, 
     input logic [9:0] [9:0] obstacle_x_game_left,
-    input logic [9:0] [2:0] width,
+    input logic [9:0] [9:0] obstacle_x_game_right,
     input logic [9:0] [8:0] obstacle_y_game_up,
-    input logic [9:0] [3:0] height,
+    input logic [9:0] [8:0] obstacle_y_game_down,
     // Trail effect inputs
     input logic [40:0] [9:0] trail_x,
     input logic [40:0] [8:0] trail_y,
@@ -146,8 +146,8 @@ module vga_screen_pic(
         pic_romaddrCrepper = 0;
         pic_romaddrZomber = 0;
         for (int j = 0; j < 10; j = j + 1) begin
-            if (pix_x >= obstacle_x_game_left[j] && pix_x < obstacle_x_game_left[j] + width[j]*UNIT_SIZE &&
-            pix_y >= obstacle_y_game_up[j] && pix_y < obstacle_y_game_up[j] + height[j]*UNIT_SIZE) begin
+            if (pix_x >= obstacle_x_game_left[j] && pix_x < obstacle_x_game_right[j] &&
+            pix_y >= obstacle_y_game_up[j] && pix_y < obstacle_y_game_down[j]) begin
             
                 // 计算障碍物内的相对坐标
                 automatic logic [9:0] rel_x = pix_x - obstacle_x_game_left[j];
@@ -253,8 +253,8 @@ module vga_screen_pic(
                         is_obstacle = 1'b0;
                         for (i = 0; i < 10; i = i + 1) begin
                             // 使用width和height参数计算障碍物边界
-                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_left[i] + width[i]*UNIT_SIZE &&
-                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_up[i] + height[i]*UNIT_SIZE) begin
+                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_right[i]&&
+                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_down[i]) begin
                                 
                                 // 根据obstacle_class设置对应的状态
                                 case (obstacle_class[i])
@@ -297,8 +297,8 @@ module vga_screen_pic(
                         is_obstacle = 1'b0;
                         for (i = 0; i < 10; i = i + 1) begin
                             // 使用width和height参数计算障碍物边界
-                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_left[i] + width[i]*UNIT_SIZE &&
-                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_up[i] + height[i]*UNIT_SIZE) begin
+                            if (pix_x >= obstacle_x_game_left[i] && pix_x < obstacle_x_game_right[i]&&
+                                pix_y >= obstacle_y_game_up[i] && pix_y < obstacle_y_game_down[i]) begin
                                 
                                 // 根据obstacle_class设置对应的状态
                                 case (obstacle_class[i])
