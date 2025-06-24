@@ -1,15 +1,14 @@
 // File: game_logic.sv
-// Enhanced with trail effect for player - Updated interface to match map.sv
+// Enhanced with trail effect for player - Fixed boundary velocity reset
 
 module game_logic(
     input wire rst_n,
     input wire clk, // 60Hz frame clock
     input [2:0] sw,
-    // Updated interface to match map.sv outputs
-    input logic [9:0] [9:0] obstacle_x_left,      // Left X coordinate in pixels
-    input logic [9:0] [2:0] obstacle_x_length,    // Width in units (multiples of UNIT_LENGTH)
-    input logic [9:0] [8:0] obstacle_y_up,        // Top Y coordinate in pixels
-    input logic [8:0] [2:0] obstacle_y_length,    // Height in units (multiples of UNIT_LENGTH)
+    input logic [9:0] [9:0] obstacle_x_left,
+    input logic [9:0] [9:0] obstacle_x_right,
+    input logic [9:0] [8:0] obstacle_y_up,
+    input logic [9:0] [8:0] obstacle_y_down,
     output reg [1:0] gamemode,
     output reg [8:0] player_y,
     output wire [2:0] heart,
@@ -18,9 +17,6 @@ module game_logic(
     output reg [40:0] [8:0] trail_y,
     output reg [40:0] [3:0] trail_life
 );
-
-    // Unit length parameter to match map.sv
-    localparam UNIT_LENGTH = 30;
 
     wire sw_n = ~sw[0]; // Player control switch
     reg [8:0] velocity;
@@ -67,18 +63,6 @@ module game_logic(
 
     // Heart output assignment
     assign heart = heart_reg;
-
-    // Calculate obstacle boundaries from unit-based inputs
-    logic [9:0] [9:0] obstacle_x_right;
-    logic [9:0] [8:0] obstacle_y_down;
-    
-    // Convert unit-based dimensions to pixel coordinates
-    always_comb begin
-        for (integer i = 0; i < 10; i++) begin
-            obstacle_x_right[i] = obstacle_x_left[i] + (obstacle_x_length[i] * UNIT_LENGTH);
-            obstacle_y_down[i] = obstacle_y_up[i] + (obstacle_y_length[i] * UNIT_LENGTH);
-        end
-    end
 
     // gamemode logic
     always_comb begin
@@ -202,7 +186,7 @@ module game_logic(
                     
                     // 每次生成5个拖尾点
                     // 检查是否有足够的空间生成5个点
-                    if (trail_write_index + 5 < TRAIL_COUNT) begin
+                    if (trail_write_index + 5 <= TRAIL_COUNT) begin
                         // 生成5个均匀分布的拖尾点
                         for (integer j = 0; j < 5; j = j + 1) begin
                             trail_x[trail_write_index + j] <= TRAIL_SPAWN_X;
@@ -251,7 +235,7 @@ module game_logic(
             if (gamemode == 2'b01 && !in_safe_time) begin
                 crash <= 2'b00; // Assume no collision initially
                 for (integer k = 0; k < 10; k = k + 1) begin
-                    // AABB collision detection algorithm using converted coordinates
+                    // AABB collision detection algorithm
                     if ( (PLAYER_X_RIGHT > obstacle_x_left[k]) &&
                          (PLAYER_X_LEFT < obstacle_x_right[k]) &&
                          (player_y + PLAYER_SIZE > obstacle_y_up[k]) &&
@@ -285,5 +269,6 @@ module game_logic(
             end
         end
     end
+
 
 endmodule

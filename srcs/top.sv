@@ -1,6 +1,5 @@
 // File: top.sv
 // Description: Top-level module with clock domain synchronization fix and trail effect
-//              Updated to work with enhanced map.sv module (unit-based obstacle generation)
 //              添加双缓冲机制解决VGA显示锯齿问题，并支持拖尾效果
 
 module top(
@@ -15,7 +14,8 @@ module top(
 //    output wire beep,
     output wire [3:0] AN,
     output wire [7:0] SEGMENT,
-    output wire [1:0] gamemode_led
+    output wire [1:0] gamemode_led,
+    output wire [2:0] heart // 添加心脏数量输出
 );
 
     // --- Internal Signals ---
@@ -37,19 +37,17 @@ module top(
     wire [40:0] [8:0] trail_y_game;
     wire [40:0] [3:0] trail_life_game;
     
-    // 游戏逻辑时钟域的障碍物数据（更新为新格式）
-    logic [9:0] [9:0] obstacle_x_left_game;     // 障碍物左上角X坐标
-    logic [9:0] [2:0] obstacle_x_length_game;   // 障碍物宽度（单位数）
-    logic [9:0] [8:0] obstacle_y_up_game;       // 障碍物左上角Y坐标
-    logic [8:0] [2:0] obstacle_y_length_game;   // 障碍物高度（单位数）
-    logic [9:0] [1:0] obstacle_class_game;      // 障碍物类别
+    // 游戏逻辑时钟域的障碍物数据
+    logic [9:0] [9:0] obstacle_x_game_left;
+    logic [9:0] [9:0] obstacle_x_game_right;
+    logic [9:0] [8:0] obstacle_y_game_up;
+    logic [9:0] [8:0] obstacle_y_game_down;
 
-    // VGA时钟域的障碍物数据（双缓冲，更新为新格式）
+    // VGA时钟域的障碍物数据（双缓冲）
     logic [9:0] [9:0] obstacle_x_left_vga;
-    logic [9:0] [2:0] obstacle_x_length_vga;
+    logic [9:0] [9:0] obstacle_x_right_vga;
     logic [9:0] [8:0] obstacle_y_up_vga;
-    logic [8:0] [2:0] obstacle_y_length_vga;
-    logic [9:0] [1:0] obstacle_class_vga;
+    logic [9:0] [8:0] obstacle_y_down_vga;
     logic [8:0] player_y_vga;
     logic [1:0] gamemode_vga;
     logic [2:0] heart_vga; // VGA时钟域的心脏数量（双缓冲）
@@ -79,17 +77,16 @@ module top(
     // Generate 60Hz clock for game logic
     clkdiv_60hz u_clkdiv_60hz(.clk(clk), .rst_n(rst_n_debounced), .clk_60hz(clk_60hz));
 
-    // --- 关键修复：时钟域同步器（更新为新的障碍物数据格式）---
+    // --- 关键修复：时钟域同步器（增加拖尾数据同步）---
     // 将游戏逻辑数据同步到VGA时钟域，避免锯齿问题
     always_ff @(posedge clk_25mhz or negedge rst_n_debounced) begin
         if (!rst_n_debounced) begin
-            // 复位时初始化障碍物数据（新格式）
+            // 复位时初始化障碍物数据
             for (integer i = 0; i < 10; i++) begin
                 obstacle_x_left_vga[i] <= 10'd700;
-                obstacle_x_length_vga[i] <= 3'd0;
+                obstacle_x_right_vga[i] <= 10'd700;
                 obstacle_y_up_vga[i] <= 9'd500;
-                obstacle_y_length_vga[i] <= 3'd0;
-                obstacle_class_vga[i] <= 2'b00;
+                obstacle_y_down_vga[i] <= 9'd500;
             end
             player_y_vga <= 9'd240;
             gamemode_vga <= 2'b00;
@@ -105,12 +102,11 @@ module top(
             // 在垂直同步信号（VS）有效时更新显示数据
             // 这样可以确保VGA在绘制下一帧时使用一套完整且稳定的数据
             if (!VS) begin // 在垂直消隐期间更新数据
-                // 同步障碍物和玩家数据（新格式）
-                obstacle_x_left_vga <= obstacle_x_left_game;
-                obstacle_x_length_vga <= obstacle_x_length_game;
-                obstacle_y_up_vga <= obstacle_y_up_game;
-                obstacle_y_length_vga <= obstacle_y_length_game;
-                obstacle_class_vga <= obstacle_class_game;
+                // 同步障碍物和玩家数据
+                obstacle_x_left_vga <= obstacle_x_game_left;
+                obstacle_x_right_vga <= obstacle_x_game_right;
+                obstacle_y_up_vga <= obstacle_y_game_up;
+                obstacle_y_down_vga <= obstacle_y_game_down;
                 player_y_vga <= player_y;
                 gamemode_vga <= gamemode;
                 heart_vga <= heart_game; // 同步心脏数量
@@ -129,11 +125,10 @@ module top(
         .rst_n(rst_n_debounced),
         .sw(sw),
         .clk(clk_60hz),                    // 使用60Hz时钟
-        // 更新为新的障碍物接口格式
-        .obstacle_x_left(obstacle_x_left_game),
-        .obstacle_x_length(obstacle_x_length_game),
-        .obstacle_y_up(obstacle_y_up_game),
-        .obstacle_y_length(obstacle_y_length_game),
+        .obstacle_x_left(obstacle_x_game_left),
+        .obstacle_x_right(obstacle_x_game_right),
+        .obstacle_y_up(obstacle_y_game_up),
+        .obstacle_y_down(obstacle_y_game_down),
         .gamemode(gamemode),
         .player_y(player_y),
         .heart(heart_game),                // 连接心脏数量输出
@@ -143,21 +138,19 @@ module top(
         .trail_life(trail_life_game)
     );
 
-    // --- Enhanced Map Generation Module ---
+    // --- Map Generation Module ---
     map u_map (
         .rst_n(rst_n_debounced),
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
         .score(score),
-        // 新的输出接口格式
-        .obstacle_x_left(obstacle_x_left_game),
-        .obstacle_x_length(obstacle_x_length_game),
-        .obstacle_y_up(obstacle_y_up_game),
-        .obstacle_y_length(obstacle_y_length_game),
-        .obstacle_class(obstacle_class_game)
+        .obstacle_x_left(obstacle_x_game_left),
+        .obstacle_x_right(obstacle_x_game_right),
+        .obstacle_y_up(obstacle_y_game_up),
+        .obstacle_y_down(obstacle_y_game_down)
     );
 
-    // --- VGA Screen Picture Generator (Enhanced with Trail Effect and New Obstacle Format) ---
+    // --- VGA Screen Picture Generator (Enhanced with Trail Effect) ---
     vga_screen_pic u_vga_screen_pic(
         .pix_x(pix_x),
         .pix_y(pix_y),
@@ -165,12 +158,10 @@ module top(
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
         .heart(heart_vga),                 // 传递心脏数量给VGA显示模块
-        // 更新为新的障碍物接口格式
         .obstacle_x_game_left(obstacle_x_left_vga),
-        .width(obstacle_x_length_vga),
+        .obstacle_x_game_right(obstacle_x_right_vga),
         .obstacle_y_game_up(obstacle_y_up_vga),
-        .height(obstacle_y_length_vga),
-        .obstacle_class(obstacle_class_vga),
+        .obstacle_y_game_down(obstacle_y_down_vga),
         // Trail effect inputs
         .trail_x(trail_x_vga),
         .trail_y(trail_y_vga),
@@ -214,4 +205,4 @@ module top(
 //        .beep(beep)
 //    );
 
-endmodule
+endmodule   
