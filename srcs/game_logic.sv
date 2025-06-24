@@ -12,6 +12,7 @@ module game_logic(
     output reg [1:0] gamemode,
     output reg [8:0] player_y,
     output wire [2:0] heart,
+    output reg [1:0] crash,
     // Trail effect outputs
     output reg [40:0] [9:0] trail_x,
     output reg [40:0] [8:0] trail_y,

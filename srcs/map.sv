@@ -452,15 +452,15 @@ assign obstacle_y_down  = obstacle_y_down_reg;
 
 // Output score
 assign score = score_reg;
-assign obstacle_class[0] = obstacle_y_up_reg[0][4:3]; // Example class based on Y position
-assign obstacle_class[1] = obstacle_y_up_reg[1][4:3];
-assign obstacle_class[2] = obstacle_y_up_reg[2][4:3];
-assign obstacle_class[3] = obstacle_y_up_reg[3][4:3];
-assign obstacle_class[4] = obstacle_y_up_reg[4][4:3];
-assign obstacle_class[5] = obstacle_y_up_reg[5][4:3];
-assign obstacle_class[6] = obstacle_y_up_reg[6][4:3];
-assign obstacle_class[7] = obstacle_y_up_reg[7][4:3];
-assign obstacle_class[8] = obstacle_y_up_reg[8][4:3];
-assign obstacle_class[9] = obstacle_y_up_reg[9][4:3];
+assign obstacle_class[0] = 2'b00; // Example class based on Y position
+assign obstacle_class[1] = 2'b10;
+assign obstacle_class[2] = 2'b01;
+assign obstacle_class[3] = 2'b11;
+assign obstacle_class[4] = 2'b10;
+assign obstacle_class[5] = 2'b00;
+assign obstacle_class[6] = 2'b01;
+assign obstacle_class[7] = 2'b11;
+assign obstacle_class[8] = 2'b10;
+assign obstacle_class[9] = 2'b01;
 
 endmodule

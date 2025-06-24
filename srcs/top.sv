@@ -11,7 +11,7 @@ module top(
     output wire [3:0] B,    // VGA Blue output
     output wire HS,         // VGA Horizontal Sync
     output wire VS,         // VGA Vertical Sync
-//    output wire beep,
+    output wire beep,
     output wire [3:0] AN,
     output wire [7:0] SEGMENT,
     output wire [1:0] gamemode_led
@@ -30,6 +30,7 @@ module top(
     wire [1:0] gamemode;
     wire [8:0] player_y;
     wire [2:0] heart_game; // 游戏逻辑时钟域的心脏数量
+    wire [1:0] crash;
     
     // Trail effect signals from game logic
     wire [40:0] [9:0] trail_x_game;
@@ -131,6 +132,7 @@ module top(
         .gamemode(gamemode),
         .player_y(player_y),
         .heart(heart_game),                // 连接心脏数量输出
+        .crash(crash),
         // Trail effect outputs
         .trail_x(trail_x_game),
         .trail_y(trail_y_game),
@@ -197,11 +199,12 @@ module top(
     DisplayNumber d1(.clk(clk), .RST(score_rst), .Hexs({bcd3, bcd2, bcd1, bcd0}), 
                     .Points(4'b0000), .LES(4'b0000), .Segment(SEGMENT), .AN(AN));
 
-//    top_beep u_top_beep(
-//        .clk(clk),
-//        .gamemode(gamemode),
-//        .sw(sw[0]),
-//        .beep(beep)
-//    );
+   top_beep u_top_beep(
+       .clk(clk),
+       .gamemode(gamemode),
+       .sw(sw[0]),
+       .crash(crash),
+       .beep(beep)
+   );
 
 endmodule   

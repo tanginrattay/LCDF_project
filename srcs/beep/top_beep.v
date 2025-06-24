@@ -2,6 +2,7 @@ module top_beep(
     input wire clk,
     input [1:0] gamemode,
     input wire sw,
+    input [1:0] crash,
     output reg beep
 );
     wire beep_start;
@@ -14,7 +15,7 @@ module top_beep(
 
     beep_gamestart bp_gs(.clk(clk), .gamemode(gamemode), .beep(beep_start)); 
     beep_gameover bp_go(.clk(clk), .gamemode(gamemode), .beep(beep_over));
-    beep_gaming bp_gi(.clk(clk), .gamemode(gamemode), .sw(sw), .beep(beep_player)); // 修正：添加了缺失的点号
+    beep_gaming bp_gi(.clk(clk), .gamemode(gamemode), .sw(sw), .crash(crash), .beep(beep_player)); // 修正：添加了缺失的点号
 
     always @(posedge clk) begin
         if (gamemode == 2'b00) begin
