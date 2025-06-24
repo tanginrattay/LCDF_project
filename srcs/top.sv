@@ -15,8 +15,7 @@ module top(
 //    output wire beep,
     output wire [3:0] AN,
     output wire [7:0] SEGMENT,
-    output wire [1:0] gamemode_led,
-    output wire [2:0] heart // 添加心脏数量输出
+    output wire [1:0] gamemode_led
 );
 
     // --- Internal Signals ---
@@ -135,7 +134,6 @@ module top(
         .obstacle_x_length(obstacle_x_length_game),
         .obstacle_y_up(obstacle_y_up_game),
         .obstacle_y_length(obstacle_y_length_game),
-        .obstacle_class(obstacle_class_game),
         .gamemode(gamemode),
         .player_y(player_y),
         .heart(heart_game),                // 连接心脏数量输出
@@ -168,10 +166,10 @@ module top(
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
         .heart(heart_vga),                 // 传递心脏数量给VGA显示模块
         // 更新为新的障碍物接口格式
-        .obstacle_x_left(obstacle_x_left_vga),
-        .obstacle_x_length(obstacle_x_length_vga),
-        .obstacle_y_up(obstacle_y_up_vga),
-        .obstacle_y_length(obstacle_y_length_vga),
+        .obstacle_x_game_left(obstacle_x_left_vga),
+        .width(obstacle_x_length_vga),
+        .obstacle_y_game_up(obstacle_y_up_vga),
+        .height(obstacle_y_length_vga),
         .obstacle_class(obstacle_class_vga),
         // Trail effect inputs
         .trail_x(trail_x_vga),
