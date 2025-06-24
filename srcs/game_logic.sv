@@ -11,6 +11,7 @@ module game_logic(
     input logic [9:0] [8:0] obstacle_y_down,
     output reg [1:0] gamemode,
     output reg [8:0] player_y,
+    output wire [2:0] heart,
     // Trail effect outputs
     output reg [40:0] [9:0] trail_x,
     output reg [40:0] [8:0] trail_y,
@@ -22,6 +23,11 @@ module game_logic(
     reg [1:0] crash; 
     reg velocity_direction; // 0 for up, 1 for down
     
+    // Heart system variables
+    reg [2:0] heart_reg;
+    reg [8:0] safe_time_counter; // Counter for safe time after collision
+    wire in_safe_time = (safe_time_counter > 0);
+    
     // Game constants
     parameter UPPER_BOUND   = 20;
     parameter LOWER_BOUND   = 460;
@@ -31,6 +37,10 @@ module game_logic(
     parameter MAX_VELOCITY  = 10;
     parameter ACCELERATION  = 1;
     
+    // Heart system constants
+    parameter INITIAL_HEARTS = 5;
+    parameter SAFE_TIME_DURATION = 300; // 5 seconds at 60Hz
+    
     // Trail constants
     parameter TRAIL_COUNT      = 41;
     parameter TRAIL_SPAWN_X    = PLAYER_X_LEFT - 8;
@@ -39,7 +49,7 @@ module game_logic(
     parameter TRAIL_MAX_LIFE_INNER  = 8;
     parameter TRAIL_MAX_LIFE_OUTER  = 6;
     parameter SPAWN_DELAY = 3; // 新增生成粒子的延迟参数
-    parameter TRAIL_SIZE = 4;   // 新增拖尾大小参数
+    parameter TAIL_SIZE = 4;   // 新增拖尾大小参数
 
     // Trail generation variables
     reg [2:0] trail_timer; // Timer for trail generation
@@ -51,10 +61,13 @@ module game_logic(
     wire hit_lower_bound = (player_y >= LOWER_BOUND - PLAYER_SIZE);
     wire hit_boundary = hit_upper_bound || hit_lower_bound;
 
+    // Heart output assignment
+    assign heart = heart_reg;
+
     // gamemode logic
     always_comb begin
-        if (crash == 2'b11) begin
-            gamemode = 2'b11;
+        if (heart_reg == 0) begin
+            gamemode = 2'b11; // Game over when no hearts left
         end else begin
             gamemode = sw[2:1];
         end
@@ -97,6 +110,8 @@ module game_logic(
             trail_timer        <= 0;
             trail_write_index  <= 0;
             spawn_timer        <= 0;
+            heart_reg          <= INITIAL_HEARTS;
+            safe_time_counter  <= 0;
             
             // Initialize trail points
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
@@ -113,6 +128,8 @@ module game_logic(
             trail_timer        <= 0;
             trail_write_index  <= 0;
             spawn_timer        <= 0;
+            heart_reg          <= INITIAL_HEARTS;
+            safe_time_counter  <= 0;
             
             // Clear all trail points
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
@@ -121,10 +138,15 @@ module game_logic(
                 trail_life[i] <= 4'd0;
             end
             
-        end else if (crash != 2'b11) begin // Normal game logic
+        end else if (heart_reg > 0) begin // Normal game logic (only when hearts > 0)
             player_y           <= player_y_next;
             velocity           <= velocity_next;
             velocity_direction <= velocity_direction_next;
+            
+            // Update safe time counter
+            if (safe_time_counter > 0) begin
+                safe_time_counter <= safe_time_counter - 1;
+            end
 
             // Update existing trail points
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
@@ -170,7 +192,7 @@ module game_logic(
                             trail_x[trail_write_index + j] <= TRAIL_SPAWN_X;
                             // 计算均匀分布的y坐标
                             // 玩家方块高度为PLAYER_SIZE，分成5个等份
-                            trail_y[trail_write_index + j] <= player_y + (j * (PLAYER_SIZE / 4)) + TRAIL_SIZE;
+                            trail_y[trail_write_index + j] <= player_y + (j * (PLAYER_SIZE / 4)) + TAIL_SIZE;
                             
                             // 根据位置设置不同的生命值
                             if (j == 2) begin // 中心点
@@ -192,7 +214,7 @@ module game_logic(
                         for (integer j = 0; j < 5; j = j + 1) begin
                             trail_x[j] <= TRAIL_SPAWN_X;
                             // 计算均匀分布的y坐标
-                            trail_y[j] <= player_y + (j * (PLAYER_SIZE / 4)) + TRAIL_SIZE;
+                            trail_y[j] <= player_y + (j * (PLAYER_SIZE / 4)) + TAIL_SIZE;
                             
                             // 根据位置设置不同的生命值
                             if (j == 2) begin // 中心点
@@ -209,8 +231,8 @@ module game_logic(
                 end
             end
 
-            // Collision detection logic - only in gamemode 01
-            if (gamemode == 2'b01) begin
+            // Collision detection logic - only in gamemode 01 and when not in safe time
+            if (gamemode == 2'b01 && !in_safe_time) begin
                 crash <= 2'b00; // Assume no collision initially
                 for (integer k = 0; k < 10; k = k + 1) begin
                     // AABB collision detection algorithm
@@ -219,13 +241,20 @@ module game_logic(
                          (player_y + PLAYER_SIZE > obstacle_y_up[k]) &&
                          (player_y < obstacle_y_down[k]) ) 
                     begin
-                        crash <= 2'b11; // Set crash state
+                        // Collision detected - reduce heart and start safe time
+                        if (heart_reg > 1) begin
+                            heart_reg <= heart_reg - 1;
+                            safe_time_counter <= SAFE_TIME_DURATION;
+                        end else begin
+                            heart_reg <= 0; // Game over
+                        end
+                        crash <= 2'b11; // Set crash state for this frame
                     end
                 end
             end
             
         end else begin
-            // In crash state, still update existing trail points but don't spawn new ones
+            // Game over state (heart_reg == 0), still update existing trail points but don't spawn new ones
             for (integer i = 0; i < TRAIL_COUNT; i = i + 1) begin
                 if (trail_life[i] > 0) begin
                     // Continue moving existing trail points
