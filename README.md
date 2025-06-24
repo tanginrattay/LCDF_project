@@ -99,3 +99,23 @@ module top(
     //...
 endmodule
 ```
+
+### ROM地址生成
+
+rom地址生成需要根据相对位置进行生成，开始使用的是绝对坐标计算得到rom的地址，出现了图像滚动/图像rgb不定态的问题。
+
+**解决办法**：使用正负判断以及确定基准点计算相对坐标。
+
+```verilog
+//正负（即超出rom显示图片边界判断），相对位置
+pic_romaddrOver = (pix_x >= GAMEOVER_X && pix_x < GAMEOVER_X + H_PIC &&
+                           pix_y >= GAMEOVER_Y && pix_y < GAMEOVER_Y + H_PIC) ?
+                          (pix_x - GAMEOVER_X) + (pix_y - GAMEOVER_Y) * H_PIC : 0; // Default to 0 if out bounds
+```
+
+### state的引入
+
+vga要使用rom加载的图像类型很多，一开始使用的是直接判断生成rgb的逻辑，这样使得代码复杂，并且拓展性不强。
+
+**解决办法**：这里引入了state变量，先根据gamemode以及障碍物等参数给state赋值，借助state对rgb进行赋值。后续利用state确实具有很强的拓展性。
+
