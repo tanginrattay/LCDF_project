@@ -240,7 +240,7 @@ module vga_screen_pic(
             end
             // 如果不是heart，再判断其他
             if (pixel_state != 4'd9) begin
-                if (gamemode == 2'b01) begin
+                if (gamemode == 2'b01 | gamemode == 2'b10) begin
                     if (pix_y <= UPPER_BOUND || pix_y >= LOWER_BOUND) begin
                         pixel_state = 4'd0; // Border (边界)
                     end
@@ -320,7 +320,6 @@ module vga_screen_pic(
                         end
                     end
                 end //end gamemode 2'b11
-                else if (gamemode == 2'b10) pixel_state = 4'd7;
                 else begin
                     pixel_state = 4'd0; //黑色背景
                 end
@@ -336,7 +335,7 @@ always_comb begin
         2'b00: begin // 初始游戏模式
                 rgb = `RGB_TO_BGR(game_start_data); // 使用宏
         end
-        2'b01, 2'b11: begin // 游戏进行模式和游戏结束模式
+        2'b01, 2'b11, 2'b10: begin // 游戏进行模式和游戏结束模式
             case (pixel_state)
                 4'd0: rgb = `RGB_TO_BGR(DEFAULT_COLOR);      // Border (边界) or Default (默认)
                 4'd1: rgb = `RGB_TO_BGR(COLOR_OBSTACLE);     // 普通障碍物
@@ -353,12 +352,6 @@ always_comb begin
                 4'd13: rgb = `RGB_TO_BGR(zomber_data);   // 僵尸 - 使用ROM数据
                 default: rgb = `RGB_TO_BGR(DEFAULT_COLOR);
             endcase
-        end
-        2'b10: begin //暂停模式
-            if (pixel_state == 4'd9)
-                rgb = `RGB_TO_BGR(heart_data); // 显示心形图标
-            else
-                rgb = `RGB_TO_BGR(COLOR_PAUSED);
         end
         default: rgb = `RGB_TO_BGR(DEFAULT_COLOR);
     endcase
