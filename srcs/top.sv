@@ -38,6 +38,7 @@ module top(
     wire [40:0] [3:0] trail_life_game;
     
     // 游戏逻辑时钟域的障碍物数据
+    logic [9:0] [1:0] obstacle_class; // 障碍物类别（双缓冲）
     logic [9:0] [9:0] obstacle_x_game_left;
     logic [9:0] [9:0] obstacle_x_game_right;
     logic [9:0] [8:0] obstacle_y_game_up;
@@ -145,6 +146,7 @@ module top(
         .clk(clk_60hz),                    // 使用60Hz时钟
         .gamemode(gamemode),
         .score(score),
+        .obstacle_class(obstacle_class), // 传递障碍物类别
         .obstacle_x_left(obstacle_x_game_left),
         .obstacle_x_right(obstacle_x_game_right),
         .obstacle_y_up(obstacle_y_game_up),
@@ -159,6 +161,7 @@ module top(
         .gamemode(gamemode_vga),           // 使用VGA时钟域的同步数据
         .player_y(player_y_vga),           // 使用VGA时钟域的同步数据
         .heart(heart_vga),                 // 传递心脏数量给VGA显示模块
+        .obstacle_class(obstacle_class), // 传递障碍物类别
         .obstacle_x_game_left(obstacle_x_left_vga),
         .obstacle_x_game_right(obstacle_x_right_vga),
         .obstacle_y_game_up(obstacle_y_up_vga),
