@@ -39,7 +39,7 @@ module game_logic(
     
     // Heart system constants
     parameter INITIAL_HEARTS = 5;
-    parameter SAFE_TIME_DURATION = 300; // 5 seconds at 60Hz
+    parameter SAFE_TIME_DURATION = 60; // 1 seconds at 60Hz
     
     // Trail constants
     parameter TRAIL_COUNT      = 41;

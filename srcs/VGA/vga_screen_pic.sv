@@ -342,7 +342,7 @@ always_comb begin
                 4'd1: rgb = `RGB_TO_BGR(COLOR_OBSTACLE);     // 普通障碍物
                 4'd2: rgb = `RGB_TO_BGR(player_out_data);    // Player (玩家)
                 4'd3: rgb = `RGB_TO_BGR(game_over_data);     // 游戏结束图片
-                4'd4: rgb = `RGB_TO_BGR(COLOR_ENDED);        // 游戏结束背景
+                4'd4: rgb = `RGB_TO_BGR(background_data);        // 游戏结束背景
                 4'd5: rgb = `RGB_TO_BGR(background_data);    // In-game background (游戏内背景)
                 4'd8: rgb = `RGB_TO_BGR(trail_color);        // Trail particle
                 4'd9: rgb = `RGB_TO_BGR(heart_data);         // 心形图标
