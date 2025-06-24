@@ -73,7 +73,7 @@ module vga_screen_pic(
     integer trail_idx; // Trail index for current pixel
 
 //rom模块
-    steve player_rom (
+    StevePlayer player_rom (
       .clka(clk),    // input wire clka
       .addra(pic_romaddrPlayer),  // input wire [10 : 0] addra
       .douta(player_out_data)  // output wire [11 : 0] douta
@@ -146,9 +146,9 @@ module vga_screen_pic(
             if (pix_x >= obstacle_x_game_left[j] && pix_x < obstacle_x_game_left[j] + width[j]*UNIT_SIZE &&
             pix_y >= obstacle_y_game_up[j] && pix_y < obstacle_y_game_up[j] + height[j]*UNIT_SIZE) begin
             
-            // 计算障碍物内的相对坐标
-            automatic logic [9:0] rel_x = pix_x - obstacle_x_game_left[j];
-            automatic logic [8:0] rel_y = pix_y - obstacle_y_game_up[j];
+                // 计算障碍物内的相对坐标
+                automatic logic [9:0] rel_x = pix_x - obstacle_x_game_left[j];
+                automatic logic [8:0] rel_y = pix_y - obstacle_y_game_up[j];
                 
                 // 缩放到单元格内坐标(0-29)
                 automatic logic [4:0] unit_x = rel_x % UNIT_SIZE;
