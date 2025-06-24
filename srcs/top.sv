@@ -14,8 +14,7 @@ module top(
 //    output wire beep,
     output wire [3:0] AN,
     output wire [7:0] SEGMENT,
-    output wire [1:0] gamemode_led,
-    output wire [2:0] heart // 添加心脏数量输出
+    output wire [1:0] gamemode_led
 );
 
     // --- Internal Signals ---

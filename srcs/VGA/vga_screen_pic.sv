@@ -217,10 +217,10 @@ module vga_screen_pic(
     //7: Paused screen (暂停画面)
     //8: Trail particle (拖尾粒子) - New state
     //9: Heart (心形图标)
-    //10: 障碍物-小黑  obstacle_class = 2‘d0
-    //11: 障碍物-小白   obstacle_class = 2‘d1
-    //12: 障碍物-苦力怕 obstacle_class = 2‘d2
-    //13: 障碍物-僵尸 obstacle_class = 2‘d3
+    //10: 障碍物-小黑  obstacle_class = 2'd0
+    //11: 障碍物-小白   obstacle_class = 2'd1
+    //12: 障碍物-苦力怕 obstacle_class = 2'd2
+    //13: 障碍物-僵尸 obstacle_class = 2'd3
 //判断像素状态
     always_comb begin
         pixel_state = 4'd0; // Default to background (默认为背景)

@@ -14,9 +14,9 @@ module map(
     output wire [13:0] score,
     output logic [9:0] [1:0] obstacle_class,
     output logic [9:0] [9:0] obstacle_x_left,
-    output logic [2:0] [9:0] obstacle_x_length,
+    output logic [2:0] [9:0] obstacle_x_right,
     output logic [9:0] [8:0] obstacle_y_up,
-    output logic [3:0] [8:0] obstacle_y_length
+    output logic [3:0] [8:0] obstacle_y_down
 );
 
 //================================================================
@@ -29,7 +29,7 @@ localparam LOWER_BOUND      = 460;
 localparam PLAY_AREA_HEIGHT = LOWER_BOUND - UPPER_BOUND;
 
 // Obstacle Parameters
-localparam UNIT_LENGTH = 16;
+localparam UNIT_LENGTH = 30;
 localparam SCROLL_SPEED       = 4;
 localparam MIN_OBSTACLE_WIDTH = 20;
 localparam MAX_OBSTACLE_WIDTH = 80;
