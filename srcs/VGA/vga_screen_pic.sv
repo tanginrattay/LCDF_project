@@ -17,7 +17,7 @@ module vga_screen_pic(
     input logic [40:0] [8:0] trail_y,
     input logic [40:0] [3:0] trail_life,
 
-    output reg [11:0] rgb
+    output reg [11:0] rgb //这里是bgr的依次输出
 );
 
 //参量说明    
@@ -49,6 +49,9 @@ module vga_screen_pic(
               HEART_X = 10'd0,
               MAX_HEART = 5; // 最大心形数量
     parameter UNIT_SIZE = 30;
+
+    // --- 新增：定义一个将RGB转换为BGR的宏 ---
+    `define RGB_TO_BGR(color) {color[3:0], color[7:4], color[11:8]}
 
 //ROM数据线声明
     wire [11:0] game_start_data, player_out_data, game_over_data, background_data, heart_data;
@@ -206,7 +209,7 @@ module vga_screen_pic(
     //确定当前像素的状态
     //0: Border (边界)
     //1: Obstacle (障碍物)
-    //TODO2:史蒂夫
+    //2:史蒂夫
     //3: Game Over image (游戏结束图片)
     //4: Game Over background (游戏结束背景)
     //5: In-game background (游戏内背景)
@@ -214,7 +217,6 @@ module vga_screen_pic(
     //7: Paused screen (暂停画面)
     //8: Trail particle (拖尾粒子) - New state
     //9: Heart (心形图标)
-    //TODO
     //10: 障碍物-小黑  obstacle_class = 2‘d0
     //11: 障碍物-小白   obstacle_class = 2‘d1
     //12: 障碍物-苦力怕 obstacle_class = 2‘d2
@@ -329,36 +331,36 @@ module vga_screen_pic(
 // 修改RGB输出部分，处理不同类型障碍物的颜色
 always_comb begin
     // Default to black
-    rgb = DEFAULT_COLOR; 
+    rgb = `RGB_TO_BGR(DEFAULT_COLOR); // 使用宏
     case (gamemode)
         2'b00: begin // 初始游戏模式
-                rgb = game_start_data;
+                rgb = `RGB_TO_BGR(game_start_data); // 使用宏
         end
         2'b01, 2'b11: begin // 游戏进行模式和游戏结束模式
             case (pixel_state)
-                4'd0: rgb = DEFAULT_COLOR;      // Border (边界) or Default (默认)
-                4'd1: rgb = COLOR_OBSTACLE;     // 普通障碍物
-                4'd2: rgb = player_out_data;    // Player (玩家)
-                4'd3: rgb = game_over_data;     // 游戏结束图片
-                4'd4: rgb = COLOR_ENDED;        // 游戏结束背景
-                4'd5: rgb = background_data;    // In-game background (游戏内背景)
-                4'd8: rgb = trail_color;        // Trail particle
-                4'd9: rgb = heart_data;         // 心形图标
+                4'd0: rgb = `RGB_TO_BGR(DEFAULT_COLOR);      // Border (边界) or Default (默认)
+                4'd1: rgb = `RGB_TO_BGR(COLOR_OBSTACLE);     // 普通障碍物
+                4'd2: rgb = `RGB_TO_BGR(player_out_data);    // Player (玩家)
+                4'd3: rgb = `RGB_TO_BGR(game_over_data);     // 游戏结束图片
+                4'd4: rgb = `RGB_TO_BGR(COLOR_ENDED);        // 游戏结束背景
+                4'd5: rgb = `RGB_TO_BGR(background_data);    // In-game background (游戏内背景)
+                4'd8: rgb = `RGB_TO_BGR(trail_color);        // Trail particle
+                4'd9: rgb = `RGB_TO_BGR(heart_data);         // 心形图标
                 // 障碍物类型对应ROM数据
-                4'd10: rgb = black_data;    // 小黑 - 使用ROM数据
-                4'd11: rgb = skeleton_data; // 小白 - 使用ROM数据
-                4'd12: rgb = crepper_data;  // 苦力怕 - 使用ROM数据
-                4'd13: rgb = zomber_data;   // 僵尸 - 使用ROM数据
-                default: rgb = DEFAULT_COLOR;
+                4'd10: rgb = `RGB_TO_BGR(black_data);    // 小黑 - 使用ROM数据
+                4'd11: rgb = `RGB_TO_BGR(skeleton_data); // 小白 - 使用ROM数据
+                4'd12: rgb = `RGB_TO_BGR(crepper_data);  // 苦力怕 - 使用ROM数据
+                4'd13: rgb = `RGB_TO_BGR(zomber_data);   // 僵尸 - 使用ROM数据
+                default: rgb = `RGB_TO_BGR(DEFAULT_COLOR);
             endcase
         end
         2'b10: begin //暂停模式
             if (pixel_state == 4'd9)
-                rgb = heart_data; // 显示心形图标
+                rgb = `RGB_TO_BGR(heart_data); // 显示心形图标
             else
-                rgb = COLOR_PAUSED;
+                rgb = `RGB_TO_BGR(COLOR_PAUSED);
         end
-        default: rgb = DEFAULT_COLOR;
+        default: rgb = `RGB_TO_BGR(DEFAULT_COLOR);
     endcase
 end
 endmodule
