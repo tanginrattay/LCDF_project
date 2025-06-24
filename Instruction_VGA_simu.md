@@ -1,14 +1,21 @@
 # VGA仿真帮助
 
-本文描述如何对VGA显示模块 (本project的`vga_screen_pic.sv`) 进行仿真。
+本文附属于[仓库](https://github.com/tanginrattay/LCDF_project)描述如何对VGA显示模块 (本project的`vga_screen_pic.sv`) 进行仿真。
+
+## 介绍
+
+在使用vga显示时，常常要利用一个模块生成rgb的值，传入vga，本文正是介绍了如何对生成rgb的模块进行仿真，检验rgb生成的逻辑。
+
+>注意：
+>本文利用ai代码仅仅介绍进行仿真的思路，具体仿真请遵照ai使用规范。
 
 ## 仿真流程
 
-我们的目标是在不实际上板的情况下，通过仿真验证 `vga_screen_pic` 模块生成的画面是否正确。核心思路是“扫描”屏幕上的每一个像素点，记录其颜色值，最后将这些颜色值组合成一张图片。
+我们的目标是在不实际上板的情况下，通过仿真验证 `vga_screen_pic` 模块生成的画面是否正确。核心思路是“扫描”屏幕上的每一个像素点，记录其颜色值，最后将这些颜色值利用python组合成一张图片。
 
 ### ai辅助
 
-以我的仿真为例，借助AI，步骤如下:
+以ai生成的仿代码真为例，步骤如下:
 
 1. 使用ai生成仿真文件
 
@@ -37,7 +44,7 @@
     ```
 
 1. **Important**:将上面的`$fopen("screen_pixels.txt", "w");`的`screen_pixels.txt`改成改成本地文件夹下文件的一个绝对路径,如`C:/Users/simu/screen_pixels.txt`,实测发现不需要有原来的文件，仿真时会新建。(注意这里如果windows的路径是`\`,请使用`/`)
-1. 使用vivado进行仿真，注意界面的继续的按钮，如果仿真没有完成(弹到仿真文件的`$stop`,请点击，继续仿真)
+1. 使用vivado进行仿真，注意下面示例界面的继续的按钮，如果仿真没有完成(弹到仿真文件的`$stop`,请点击，继续仿真)
     ![vivado界面](./Pictures/Instruction/simu_vivado.png)
 1. 在`txt`文件对应的文件夹下，让ai创建一个python文件,用于生成图片。
 
@@ -70,7 +77,7 @@
     print("图片已保存为 screen_output.png")
     ```
 
-3. 运行python代码，查看结果
+3. 运行python代码，查看结果，下面是一个示例结果
     ![仿真结果示例](./testbench/result/screen_pixels.png)
 
 ### 具体思路
@@ -93,7 +100,7 @@
 
 ## GIF
 
-不满足于一帧图片？可用利用多帧合成gif看到你的动态图片！
+不满足于一帧图片？可用利用多帧合成gif看到你的动态图片!(此处的gif在pdf中可能无法正常显示，可以查看[仓库](https://github.com/tanginrattay/LCDF_project)中的同名md文件)
 
 ![Gif示例](./testbench/result/Heart.gif)
 
@@ -101,7 +108,7 @@
 
 与前文的思路类似，但是要利用vivado的仿真文件写入多个文件，利用多帧合成gif文件，看到你的仿真结果。
 
-1. 仿真文件[示例](./testbench/tb_vga_pic_multi.sv)(AI生成)
+1. 仿真文件示例(AI生成)
 
     ```verilog
     //示例
@@ -144,7 +151,7 @@
     # 文件匹配模式
     FILE_PATTERN = "frame_*.txt"
     # 输出的GIF文件名
-    OUTPUT_GIF = "Heart.gif"
+    OUTPUT_GIF = "Result.gif"
 
     # VGA屏幕尺寸
     SCREEN_WIDTH = 640
@@ -240,4 +247,4 @@ Q: 再次进行仿真，在vivado的scope加入仿真模块，查看对应坐标
     ![vivado界面的scope加入仿真波形查看](./Pictures/Instruction/simu_vivado_tip.png)
     ~~我进行大程时主要是上面的debug,而且特别多~~
 
-2. **Tip**：vivado波形界面改变`pix_x`或者`pix_y`是radix使用unsigned integer可以查看十进制坐标
+**Tip**：vivado波形界面改变`pix_x`或者`pix_y`是radix使用unsigned integer可以查看十进制坐标
