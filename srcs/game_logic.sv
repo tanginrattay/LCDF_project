@@ -186,7 +186,7 @@ module game_logic(
                     
                     // 每次生成5个拖尾点
                     // 检查是否有足够的空间生成5个点
-                    if (trail_write_index + 5 <= TRAIL_COUNT) begin
+                    if (trail_write_index + 5 < TRAIL_COUNT) begin
                         // 生成5个均匀分布的拖尾点
                         for (integer j = 0; j < 5; j = j + 1) begin
                             trail_x[trail_write_index + j] <= TRAIL_SPAWN_X;
