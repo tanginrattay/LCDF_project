@@ -1,6 +1,7 @@
 # Intro
 
-这里是数逻大程的代码文件，工程借鉴了几何冲刺的`ship`状态的玩法，采取`Minecraft`的主题。
+这里是数逻大程的代码文件，工程借鉴了几何冲刺的`ship`状态的玩法，采取`Minecraft`的主题。[实验报告网站](https://tanginrattay.github.io/LCDF_project/)
+
 
 
 # Lab
