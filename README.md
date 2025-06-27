@@ -19,7 +19,21 @@
 - ~~- [ ] 开发者模式(不想做了)~~
 
 ## Structure 
-//TODO
+
+```
+├─Pictures
+│  ├─Experience
+│  └─Instruction
+├─srcs
+│  ├─beep
+│  ├─seg
+│  └─VGA(VGA显示模块代码)
+│      └─COE(ROM的coe文件)
+├─testbench(仿真文件文件夹)
+│  └─result(仿真结果示例)
+└─xdc(引脚约束)
+```
+
 ## Current State
 
 ### Problems

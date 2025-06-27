@@ -139,7 +139,7 @@
 1. 利用python(AI生成)合成gif文件,最后的文件夹如下
 
     ```python
-    #python代码示例
+    #python代码示例，此处的库可能需要额外安装
     import os
     import glob
     import numpy as np
