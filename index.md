@@ -2072,15 +2072,5 @@ vga要使用rom加载的图像类型很多，一开始使用的是直接判断�
 
 <img src="C:\Users\13566\Documents\WeChat Files\wxid_etqwvos0ixfg29\FileStorage\Temp\e601b18dd45cd387e33ab5a7e7fc64b.png" alt="e601b18dd45cd387e33ab5a7e7fc64b" style="zoom: 80%;" />
 
-**分工情况：**
-
-map，game_logic：汤宇帆
-
-VGA，beep：阳震
-
-beep，实验报告：张庭宇
-
 **参考资料：**https://wintermelonc.github.io/WintermelonC_Docs/zju/basic_courses/digital_logic_design/lab/final/
-
-**个人签名：**![image-20250624234303353](C:\Users\13566\AppData\Roaming\Typora\typora-user-images\image-20250624234303353.png)
 
